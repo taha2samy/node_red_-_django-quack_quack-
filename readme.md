@@ -7,7 +7,7 @@
 This project integrates **Node-RED** with **Django**, creating a powerful and scalable system for managing IoT devices and processes. The system is designed to handle real-time data, ensure secure communication, and simplify scaling and customization.
 
 ---
-
+   
 ### **Features**
 
 #### **1. Attribute-Based Access Control**
