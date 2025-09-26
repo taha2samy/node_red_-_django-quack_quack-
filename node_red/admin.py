@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Device, Element, ElementPermissionsUser, ElementPermissionsGroup,Connections
+from .models import Device, Element, ElementPermissionsUser, ElementPermissionsGroup,Connections,JWTSigningKey
 
 # Register Device model to the admin panel
 class DeviceAdmin(admin.ModelAdmin):
@@ -36,3 +36,15 @@ class ElementPermissionsGroupAdmin(admin.ModelAdmin):
     list_filter = ('permissions',)
 
 admin.site.register(ElementPermissionsGroup, ElementPermissionsGroupAdmin)
+
+@admin.register(JWTSigningKey)
+class JWTSigningKeyAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'algorithm', 'is_active', 'created_at')
+    list_filter = ('algorithm', 'is_active', 'user')
+    search_fields = ('name', 'user__username')
+    
+    # Make key fields read-only after they have been created to prevent accidental changes
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # If the object already exists
+            return ('private_key', 'public_key', 'algorithm', 'key_size', 'user')
+        return () # Otherwise, all fields are editable

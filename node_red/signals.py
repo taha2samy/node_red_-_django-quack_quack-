@@ -10,25 +10,25 @@ from .middleware import model_to_dict_updates
 @receiver(post_save, sender=Connections)
 def track_connection_new(sender, instance, created, **kwargs):
     if created:
-        elements = Element.objects.filter(device=instance.device)  # تأكد من أنك تستخدم `device`
+        elements = Element.objects.filter(device=instance.device)  
         channel_layer = get_channel_layer()
         for element in elements:
             async_to_sync(channel_layer.group_send)(
-                str(element.id),  # Replace with your group name
+                str(element.id), 
                 {
                     "type": "check_connection_element",
                     "status": "connected",
-                    "element_id": str(element.id)  # تأكد من استخدام ID كـ str
+                    "element_id": str(element.id) 
                 }
             )
 @receiver(post_delete, sender=Connections)
 def track_connection_new(sender, instance, **kwargs):
-    elements = Element.objects.filter(device=instance.device)  # تأكد من أنك تستخدم `device`
+    elements = Element.objects.filter(device=instance.device)  
     
     channel_layer = get_channel_layer()
     for element in elements:
         async_to_sync(channel_layer.group_send)(
-            str(element.id),  # Replace with your group name
+            str(element.id),  
             {
                 "type": "check_connection_element",
                 "status": "disconnected",
@@ -43,7 +43,7 @@ def device_post_save(sender, instance, created, **kwargs):
     channel_layer = get_channel_layer()
     message = model_to_dict_updates(instance)
     async_to_sync(channel_layer.group_send)(
-        str(instance.id),  # Replace with your group name
+        str(instance.id), 
         {
             "type": "device_updates",
             "message": message,
@@ -56,7 +56,7 @@ def device_post_delete(sender, instance,**kwargs):
     message=model_to_dict_updates(instance)
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-        str(instance.id),  # Replace with your group name
+        str(instance.id), 
         {
             "type": "device_updates",
             "message": message,

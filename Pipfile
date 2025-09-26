@@ -11,6 +11,8 @@ websockets = "*"
 djangorestframework-simplejwt = "*"
 orjson = "*"
 psutil = "*"
+django-cryptography = "*"
+cryptography = "*"
 
 [dev-packages]
 

@@ -156,3 +156,100 @@ class ElementPermissionsGroup(models.Model):
 
     def __str__(self):
         return f'{self.group} has permission {self.permissions} on {self.element}'
+    
+
+
+
+class JWTSigningKey(models.Model):
+    """
+    A model to store and manage JWT signing keys for asymmetric algorithms.
+    It automatically generates the key pair upon creation.
+    """
+
+    # Supported asymmetric algorithms
+    class Algorithm(models.TextChoices):
+        RS256 = 'RS256', 'RS256 (Asymmetric, RSA-SHA256)'
+        ES256 = 'ES256', 'ES256 (Asymmetric, ECDSA-SHA256)'
+
+    # --- Core Fields ---
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='jwt_keys',
+        help_text="The user who owns this key."
+    )
+    name = models.CharField(
+        max_length=100,
+        help_text="A descriptive name for the key (e.g., 'Payment Service Key')."
+    )
+    algorithm = models.CharField(
+        max_length=10,
+        choices=Algorithm.choices,
+        help_text="The algorithm used to generate the key pair."
+    )
+    key_size = models.PositiveIntegerField(
+        default=2048,
+        help_text="For RSA (in bits): 2048 or 4096. This is ignored for ES256."
+    )
+    
+    # --- Key Fields (auto-populated) ---
+    private_key = models.TextField(
+        blank=True,
+        help_text="The private key in PEM format. Generated automatically. Never share this."
+    )
+    public_key = models.TextField(
+        blank=True,
+        help_text="The public key in PEM format. Generated automatically. This can be shared safely."
+    )
+    
+    # --- Metadata ---
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True, help_text="You can deactivate a key instead of deleting it.")
+
+    class Meta:
+        verbose_name = "JWT Signing Key"
+        verbose_name_plural = "JWT Signing Keys"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.algorithm}) - {self.user.username}"
+
+    def generate_keys(self):
+        """
+        Generates the private/public key pair based on the selected algorithm.
+        """
+        private_key_obj = None
+
+        # 1. RSA Algorithm
+        if self.algorithm == self.Algorithm.RS256:
+            private_key_obj = rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=self.key_size,
+            )
+        
+        # 2. ECDSA Algorithm
+        elif self.algorithm == self.Algorithm.ES256:
+            private_key_obj = ec.generate_private_key(ec.SECP256R1())
+        
+        if not private_key_obj:
+            raise ValidationError(f"Key generation failed for unsupported algorithm: {self.algorithm}")
+
+        # Serialize the private key to PEM format
+        self.private_key = private_key_obj.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption() # For simplicity. Use encryption for higher security.
+        ).decode('utf-8')
+
+        # Extract and serialize the public key to PEM format
+        public_key_obj = private_key_obj.public_key()
+        self.public_key = public_key_obj.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+            
+    def save(self, *args, **kwargs):
+        # Generate keys only when creating a new object for the first time
+        if not self.pk:
+            self.generate_keys()
+        super().save(*args, **kwargs)
