@@ -1,193 +1,265 @@
+import asyncio
+import logging
+import socket
+import uuid
+from collections import deque
+
 import orjson
+import psutil
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.core.cache import cache
-from collections import deque
 from node_red.models import Connections
-from channels.db import database_sync_to_async
-import psutil
-import socket
-import asyncio
-import uuid
-class NodeRed(AsyncWebsocketConsumer):
+
+# Setup a logger for this module
+logger = logging.getLogger(__name__)
+
+
+class NodeRedConsumer(AsyncWebsocketConsumer):
     """
-    Node Red consumer
+    A robust WebSocket consumer for real-time data flows.
+
+    This consumer manages device and element-specific channels, handles
+    state synchronization, logs connection details securely, and processes
+    messages efficiently with proper error handling.
     """
+
+    # --------------------------------------------------------------------------
+    # WebSocket Lifecycle Methods
+    # --------------------------------------------------------------------------
 
     async def connect(self):
-        # This method is called when a WebSocket connection is requested
-        self.device = self.scope.get('device')
-        elements = self.scope.get('element')
-        if elements is not None:
-            self.elements_data = {e['id']: e for e in elements}
-            self.elements_ids = set(self.elements_data.keys())
-        else:
-            self.elements_data = {}
-            self.elements_ids = set()
-
-        await asyncio.gather(
-            *(self.channel_layer.group_add(e_id, self.channel_name) for e_id in self.elements_ids),
-            self.channel_layer.group_add(self.device['id'], self.channel_name)
-        )
-
+        """
+        Handles a new WebSocket connection.
+        Initializes state, joins channel groups, and creates a connection record.
+        """
+        self._initialize_state()
+        await self._join_groups()
         await self.accept()
-        self.connection_id =await self.create_connection(self.device['id'], self.scope)
-        
-
-
+        self.connection_id = await self._create_connection_record()
 
     async def disconnect(self, close_code):
-        # This method is called when the WebSocket connection is closed
-        # Leave all groups
-        for element_id in self.elements_ids:
-            await self.channel_layer.group_discard(element_id, self.channel_name)
-        await self.channel_layer.group_discard(self.device['id'], self.channel_name)
-        await self.remove_connection(self.connection_id)
+        """
+        Handles a WebSocket disconnection.
+        Leaves all channel groups and removes the connection record.
+        """
+        await self._leave_groups()
+        await self._remove_connection_record(self.connection_id)
+
+    # --------------------------------------------------------------------------
+    # Message Handlers
+    # --------------------------------------------------------------------------
 
     async def receive(self, text_data):
-        print(text_data)
+        """
+        Receives a message from the WebSocket, processes it, updates the cache,
+        and broadcasts it to the relevant element group.
+        """
         try:
-            # Using orjson for faster JSON deserialization
-            text_data_json = orjson.loads(text_data)
-            element_id = text_data_json['element_id']
-            message = text_data_json['message']
-            # Use dictionary lookup instead of iterating through the list
-            print(message,element_id)
+            payload = orjson.loads(text_data)
+            element_id = payload['element_id']
+            message = payload['message']
+
             if element_id in self.elements_ids:
+                self._update_element_cache(element_id, message)
                 
-                element_data = self.elements_data[element_id]
-                
-                cache_key = f"{element_id}cache"
-                queue = cache.get(cache_key, deque(maxlen=element_data['points']))
-                queue.append(message)
-                cache.set(cache_key, queue,timeout=None)
-                print(message)
                 await self.channel_layer.group_send(
                     element_id,
                     {
-                        'type': 'message_element',
+                        'type': 'forward_element_message',
                         'element_id': element_id,
                         'message': message,
-                        'channel': str(self.channel_name),
+                        'origin_channel': self.channel_name,
                     }
                 )
-        except Exception as e:
-            # Handle exception (consider logging it for debugging)
-            pass
-
-    async def message_element(self, message):
-        if message['channel'] != self.channel_name:
-            await self.send(
-                text_data=orjson.dumps(message
-                ).decode('utf-8')  # Decode to string for WebSocket transmission
+        except (orjson.JSONDecodeError, KeyError) as e:
+            # Log the error instead of silently passing
+            logger.warning(
+                f"Invalid message format from {self.channel_name}. Error: {e}. Data: {text_data}"
             )
-    async def device_updates(self,event):
-        """"
-         sync updates to the device
+
+    async def forward_element_message(self, event):
         """
-        if event['state']=="update":
-            self.device=event["message"]
-            pass
-        
-        elif event['state']=="delete":
+        Forwards a message from a group to the client, but only if the message
+        did not originate from this same client.
+        """
+        if event['origin_channel'] != self.channel_name:
+            await self.send(
+                text_data=orjson.dumps({
+                    'element_id': event['element_id'],
+                    'message': event['message'],
+                }).decode('utf-8')
+            )
+
+    # --------------------------------------------------------------------------
+    # Real-time State Synchronization Handlers
+    # --------------------------------------------------------------------------
+
+    async def device_updates(self, event):
+        """
+        Handles real-time updates for the connected device.
+        """
+        state = event.get('state')
+        if state == "update":
+            self.device = event.get("message", self.device)
+        elif state == "delete":
             await self.close(code=4000)
+
+    async def elements_updates(self, event):
+        """
+        Handles real-time CRUD updates for the device's elements.
+        """
+        state = event.get('state')
+        element = event.get('message', {})
+        element_id = element.get('id')
+
+        if not element_id:
+            return
+
+        if state == "create":
+            await self.channel_layer.group_add(element_id, self.channel_name)
+            self.elements_ids.add(element_id)
+            self.elements_data[element_id] = element
+        elif state == "update":
+            self.elements_data[element_id] = element
+        elif state == "delete":
+            await self.channel_layer.group_discard(element_id, self.channel_name)
+            self.elements_ids.discard(element_id)
+            # Use .pop() for safe deletion to avoid KeyError
+            self.elements_data.pop(element_id, None)
             
-        else:
-            pass
-    async def elements_updates(self,event):
+    async def close_connection(self, event):
         """
-        sync updates to the elements
+        Handler to programmatically close the connection if requested.
         """
-        if event["state"]=="create":
-            await self.channel_layer.group_add( event['message']["id"], self.channel_name)
-            self.elements_ids.add(event['message']["id"])
-            self.elements_data[event['message']["id"]]=event["message"]
-            pass
-        elif event["state"]=="update":
-            self.elements_data[event['message']["id"]]=event["message"]
-            pass
-        elif event["state"]=="delete":
-            await self.channel_layer.group_discard( event['message']["id"], self.channel_name)
-            self.elements_ids.discard(event['message']["id"])
-            del self.elements_data[event['message']["id"]]
-            pass
+        if event.get('connection_id') == self.connection_id:
+            await self._remove_connection_record(self.connection_id)
+            await self.close()
+    async def element_connection_status(self, event):
+        """
+        This consumer is the source of connection truth, so it doesn't need
+        to act on these broadcast messages. This handler exists to
+        prevent a "No handler" error when messages are sent to a group
+        it's subscribed to (alongside BrowserConsumers).
+        """
         pass
-    
+    # --------------------------------------------------------------------------
+    # Helper & Internal Methods
+    # --------------------------------------------------------------------------
+
+    def _initialize_state(self):
+        """Initializes consumer state from the connection scope."""
+        self.device = self.scope.get('device')
+        elements = self.scope.get('element', [])
+        self.elements_data = {e['id']: e for e in elements} if elements else {}
+        self.elements_ids = set(self.elements_data.keys())
+        self.connection_id = None
+
+    async def _join_groups(self):
+        """Adds the consumer's channel to all relevant groups."""
+        groups_to_join = list(self.elements_ids) + [self.device['id']]
+        await asyncio.gather(
+            *(self.channel_layer.group_add(group, self.channel_name) for group in groups_to_join)
+        )
+
+    async def _leave_groups(self):
+        """Removes the consumer's channel from all its groups."""
+        groups_to_leave = list(self.elements_ids) + [self.device['id']]
+        await asyncio.gather(
+            *(self.channel_layer.group_discard(group, self.channel_name) for group in groups_to_leave)
+        )
+
+    def _update_element_cache(self, element_id, message):
+        """Updates the cache for a given element with a new message."""
+        element_data = self.elements_data.get(element_id, {})
+        cache_key = f"cache:{element_id}"
+        # Provide a default maxlen for the deque
+        max_points = element_data.get('points', 100)
+        queue = cache.get(cache_key, deque(maxlen=max_points))
+        queue.append(message)
+        cache.set(cache_key, queue, timeout=None)
+
+    # --------------------------------------------------------------------------
+    # Database Interaction Methods
+    # --------------------------------------------------------------------------
+
+    async def _create_connection_record(self):
+        """
+        Securely gathers specific connection details and creates a record
+        in the database. Avoids storing the entire scope object.
+        """
+        # Selectively pick only the required, non-sensitive information
+        headers = {key.decode('utf-8', 'ignore'): value.decode('utf-8', 'ignore')
+                   for key, value in self.scope.get('headers', [])}
+
+        connection_details = {
+            'client': self.scope.get('client'),
+            'path': self.scope.get('path'),
+            'user_agent': headers.get('user-agent'),
+            'server_network': await self._get_server_network_info(),
+        }
+        return await self.db_create_connection(self.device['id'], connection_details)
 
     @staticmethod
     @database_sync_to_async
-    def create_connection(device_id, details):
-        """
-        Create a new connection record in the database.
-        """
-        def get_network_interfaces():
-            """
-            get all netowrk information
-            """
-            interfaces = []
-            try:
-                for name, addrs in psutil.net_if_addrs().items():
-                    stats = psutil.net_if_stats().get(name)
-                    if stats and stats.isup:
-                        interface_info = {
-                            'interface': name,
-                            'mtu': stats.mtu,
-                            'is_up': stats.isup,
-                            'addresses': [addr.address for addr in addrs if addr.family == socket.AF_INET]
-                        }
-                        interfaces.append(interface_info)
-            except Exception as e:
-                print(f"Error getting network info: {e}")
-            return interfaces
+    def db_create_connection(device_id, details):
+        """Creates a new connection record in the database."""
+        connection = Connections.objects.create(device_id=device_id, details=details)
+        return connection.id
+        
+    async def _remove_connection_record(self, connection_id):
+        """Removes the connection record from the database."""
+        if connection_id:
+            await self.db_remove_connection(connection_id)
 
-        def decode_bytes(obj):
-            if isinstance(obj, bytes):
-                return obj.decode('utf-8')
-            elif isinstance(obj, uuid.UUID):
-                return str(obj)
-            elif isinstance(obj, dict):
-                return {k: decode_bytes(v) for k, v in obj.items()}
-            elif isinstance(obj, (list, tuple)):
-                return [decode_bytes(item) for item in obj]
-            else:
-                return obj
+    @staticmethod
+    @database_sync_to_async
+    def db_remove_connection(connection_id):
+        """Deletes a connection record by its ID."""
+        Connections.objects.filter(id=connection_id).delete()
 
-        network_info = {
+    # --------------------------------------------------------------------------
+    # Static Utility Methods
+    # --------------------------------------------------------------------------
+
+    @staticmethod
+    async def _get_server_network_info():
+        """
+        Asynchronously gathers network information about the server host
+        without blocking the event loop.
+        """
+        loop = asyncio.get_running_loop()
+        
+        # Run synchronous I/O operations in a thread pool executor
+        try:
+            hostname = await loop.run_in_executor(None, socket.gethostname)
+            ip_address = await loop.run_in_executor(None, socket.gethostbyname, hostname)
+        except socket.gaierror:
+            hostname = "localhost"
+            ip_address = "127.0.0.1"
+        
+        interfaces = []
+        try:
+            # psutil calls are generally fast and non-blocking, but can be run
+            # in an executor for extreme caution if needed.
+            if_addrs = psutil.net_if_addrs()
+            if_stats = psutil.net_if_stats()
+            for name, addrs in if_addrs.items():
+                stats = if_stats.get(name)
+                if stats and stats.isup:
+                    interfaces.append({
+                        'interface': name,
+                        'mtu': stats.mtu,
+                        'is_up': stats.isup,
+                        'addresses': [addr.address for addr in addrs if addr.family == socket.AF_INET]
+                    })
+        except Exception as e:
+            logger.error(f"Could not retrieve network interface info: {e}")
+
+        return {
             'host': {
-                'hostname': socket.gethostname(),
-                'ip_address': socket.gethostbyname(socket.gethostname()),
-                'interfaces': get_network_interfaces()
+                'hostname': hostname,
+                'ip_address': ip_address,
+                'interfaces': interfaces
             }
         }
-
-        details_serializable = decode_bytes(details)
-        
-        details_serializable['network'] = network_info
-
-        connection = Connections.objects.create(
-            device_id=device_id,
-            details=details_serializable
-        )
-        return connection.id
-
-
-
-  
-    @staticmethod
-    @database_sync_to_async
-    def remove_connection(connection_id):
-        """
-        remove connection
-        """
-        try:
-            connection = Connections.objects.get(id=connection_id)
-            connection.delete()
-        except Connections.DoesNotExist:
-            pass
-    async def close_connection(self, event):
-        if event['connection_id']==self.connection_id:
-            await self.remove_connection(self.connection_id)
-            self.close()
-        pass
-
-    async def check_connection_element(self,event):
-        pass

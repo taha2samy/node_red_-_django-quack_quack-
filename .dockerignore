@@ -1,0 +1,12 @@
+db.sqlite3
+*/__pycache__/
+staticfiles/
+media/
+.vscode/
+img/
+*.pyc/
+Pipfile
+Pipfile.lock
+*.md
+.gitignore
+docker/

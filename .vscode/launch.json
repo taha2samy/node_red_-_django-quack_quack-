@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Django: Runserver",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "args": ["runserver"],
+      "django": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Django: Makemigrations",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "args": ["makemigrations"],
+      "django": true,
+      "console": "integratedTerminal"
+    },
+    {
+    "name": "Daphne: runserver",
+    "type": "python",
+    "request": "launch",
+    "module": "daphne",
+    "args": [
+        "-b", "0.0.0.0",
+        "-p", "8000",
+        "myproject.asgi:application"
+    ],
+    "console": "integratedTerminal",
+    "env": {
+        "DJANGO_SETTINGS_MODULE": "myproject.settings"
+    },
+    "django": true
+    }
+
+  ]
+}
