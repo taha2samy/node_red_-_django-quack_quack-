@@ -1,13 +1,17 @@
 from django.contrib import admin
-from .models import Device, Element, ElementPermissionsUser, ElementPermissionsGroup,Connections,JWTSigningKey
+from .models import Device, Element, ElementPermissionsUser, ElementPermissionsGroup,Connections,JWTPublicKey
+import jwt
+from datetime import datetime, timedelta
+from django.utils.html import format_html
 
-# Register Device model to the admin panel
+
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'description', 'token')
-    search_fields = ('name', 'description')
-    readonly_fields = ('id', 'token')
+    list_display = ('id', 'name', 'public_key', 'description')
+
+
 
 admin.site.register(Device, DeviceAdmin)
+
 # Register Connections model to the admin panel
 class ConnectionsAdmin(admin.ModelAdmin):
     list_display = ('id','device')
@@ -37,14 +41,51 @@ class ElementPermissionsGroupAdmin(admin.ModelAdmin):
 
 admin.site.register(ElementPermissionsGroup, ElementPermissionsGroupAdmin)
 
-@admin.register(JWTSigningKey)
-class JWTSigningKeyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'user', 'algorithm', 'is_active', 'created_at')
-    list_filter = ('algorithm', 'is_active', 'user')
-    search_fields = ('name', 'user__username')
+@admin.register(JWTPublicKey)
+class JWTPublicKeyAdmin(admin.ModelAdmin):
+    list_display = (
+        'name', 
+        'algorithm', 
+        'key_size', 
+        'is_active', 
+        'created_at'
+    )
     
-    # Make key fields read-only after they have been created to prevent accidental changes
-    def get_readonly_fields(self, request, obj=None):
-        if obj:  # If the object already exists
-            return ('private_key', 'public_key', 'algorithm', 'key_size', 'user')
-        return () # Otherwise, all fields are editable
+    list_filter = (
+        'is_active', 
+        'algorithm', 
+        'created_at'
+    )
+    
+    search_fields = (
+        'name', 
+        'public_key'
+    )
+    
+    readonly_fields = (
+        'algorithm', 
+        'key_size', 
+        'created_at'
+    )
+    
+    fieldsets = (
+        ('Key Information', {
+            'fields': (
+                'name', 
+                'public_key'
+            )
+        }),
+        ('Detected Properties', {
+            'classes': ('collapse',),
+            'fields': (
+                'algorithm', 
+                'key_size'
+            )
+        }),
+        ('Status & Metadata', {
+            'fields': (
+                'is_active', 
+                'created_at'
+            )
+        }),
+    )

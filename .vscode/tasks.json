@@ -1,60 +1,58 @@
 {
     "version": "2.0.0",
     "tasks": [
-        {
-            "label": "Django: Makemigrations",
-            "type": "shell",
-            "command": "pipenv run python manage.py makemigrations",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true,
-                "color": "#28a745"  // Green for makemigrations
-            }
-        },
-        {
-            "label": "Django: Migrate",
-            "type": "shell",
-            "command": "pipenv run python manage.py migrate",
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true,
-                "color": "#007bff"  // Blue for migrate
-            }
-        },
-        {
-            "label": "Django: Runserver",
-            "type": "shell",
-            "command": "pipenv run python manage.py runserver",
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "dependsOn": [
-                "Django: Makemigrations",
-                "Django: Migrate"
-            ],
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": true,
-                "color": "#f39c12"  // Yellow for runserver
-            }
-        }
+    {
+      "label": "Docker: Compose Up",
+      "type": "shell",
+      "command": "docker-compose -f docker/dockercompose.yaml --env-file docker/enfile.env up --build -d",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "icon": {
+        "id": "play-circle",         
+        "color": "terminal.ansiGreen"
+      }
+    },
+    {
+      "label": "Docker: Compose Down",
+      "type": "shell",
+      "command": "docker-compose -f docker/dockercompose.yaml down",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": true
+      },
+      "group": "build",
+      "icon": {
+        "id": "debug-disconnect",
+        "color": "terminal.ansiRed"
+      }
+    },
+    {
+  "label": "Django: export requirements.txt",
+  "type": "shell",
+  "command": "pipenv run python -m pip freeze > requirements.txt",
+  "problemMatcher": [],
+  "presentation": {
+    "reveal": "always",
+    "panel": "shared",
+    "showReuseMessage": true,
+    "clear": true
+  },
+  "icon": {
+    "id": "file-code",
+    "color": "terminal.ansiWhite"
+  }
+},
     ]
 }

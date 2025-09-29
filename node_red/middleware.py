@@ -1,31 +1,28 @@
 import jwt
-from channels.auth import BaseMiddleware
-from django.conf import settings
-from django.contrib.auth.models import AnonymousUser
-from channels.db import database_sync_to_async
-from .models import Device, Element
-from .serializers import DeviceSerializer, ElementSerializer
-import datetime
 import logging
-from django.forms.models import model_to_dict
-from django.db.models import QuerySet
 import uuid
+from channels.auth import BaseMiddleware
+from channels.db import database_sync_to_async
+from django.contrib.auth.models import AnonymousUser
+from django.db.models import QuerySet
+from django.forms.models import model_to_dict
+from .models import Device, Element
+from channels.exceptions import DenyConnection
+
+
 logger = logging.getLogger(__name__)
+
 def model_to_dict_updates(instance_or_queryset):
     """
-    Convert a model instance or queryset to a dictionary with all fields, including `id`.
-
-    :param instance_or_queryset: A Django model instance or queryset
-    :return: A dictionary or list of dictionaries
+    Helper function to convert model instances or querysets into dictionaries,
+    ensuring UUIDs are converted to strings.
     """
     if isinstance(instance_or_queryset, QuerySet):
         return [model_to_dict_updates(instance) for instance in instance_or_queryset]
     
-    # For a single instance, include all fields (including `id`)
     data = model_to_dict(instance_or_queryset)
-    data['id'] = instance_or_queryset.id  # Ensure the `id` is included
+    data['id'] = instance_or_queryset.id
 
-    # Convert UUID fields to string
     for field, value in data.items():
         if isinstance(value, uuid.UUID):
             data[field] = str(value)
@@ -34,63 +31,109 @@ def model_to_dict_updates(instance_or_queryset):
 
 class AuthMiddlewareDevice(BaseMiddleware):
     """
-    WebSocket middleware for authenticating devices or users via JWT.
+    Middleware that authenticates a device by its ID from the JWT payload.
+    It fetches the device's assigned public key from the database to verify the token.
+    Connections without a token are treated as anonymous.
     """
 
     async def __call__(self, scope, receive, send):
-        token = None
+        scope['device'] = None
+        scope['element'] = []
+        scope['user'] = AnonymousUser()
 
         try:
-            # Extract token from the headers
-            for key, value in scope["headers"]:
-                if key == b"authorization":
-                    token = value.decode().split(" ")[1]  # Get the token after "Bearer"
-        except Exception as e:
-            logger.error(f"Error extracting token: {e}")
-            return await self.close_connection(send)
-        
-        if token:
-            device, elements = await self.authenticate_token(token)
-            if device is None:
-                return await self.close_connection(send)
+            auth_header = next(value for key, value in scope["headers"] if key == b"authorization")
+            token = auth_header.decode().split(" ")[1]
+            
+            authenticated_scope = await self.authenticate_and_prepare_scope(token, scope)
+            if authenticated_scope:
+                scope = authenticated_scope
+            else:
+                await send({
+                    "type": "websocket.close",
+                    "code": 4000,  
+                    "reason": "Device authentication failed"
+                })
+                return
+                
 
-            scope["device"] = device  # Attach the authenticated user/device to the scope
-            scope['element'] = elements  # Attach the elements to the scope
+        except (StopIteration, IndexError):
+            await send({
+                "type": "websocket.close",
+                "code": 4000,
+                "reason": "Device authentication failed"
+            })
+            return
+            
         return await super().__call__(scope, receive, send)
+
     @database_sync_to_async
-    def authenticate_token(self, token):
+    def get_device_with_key(self, device_id):
         """
-        Authenticate the token and return device data and elements if valid.
+        Fetches the device and its related public key from the database.
+        Returns None if the device doesn't exist or has no key assigned.
         """
         try:
-            # Decode the token
-            payload = jwt.decode(token, settings.DEVICES_SETTING['SIGNING_KEY'], algorithms=[settings.DEVICES_SETTING['ALGORITHM']], options={"verify_exp": settings.DEVICES_SETTING['CHEACKLIFETIME']})
-            device_id = payload['id']
-            if settings.DEVICES_SETTING['CHEACKLIFETIME']:
-                if (payload["exp"]-datetime.datetime.now().timestamp() < 0 ):
-                    raise jwt.ExpiredSignatureError    
-            device = Device.objects.get(id=device_id)
-            if settings.DEVICES_SETTING['INDATABASE']:
-                if device.token != token:
-                    raise jwt.InvalidTokenError
-            elements = Element.objects.filter(device_id=device_id)
-            # Serialize the data and return serialized response
-            device_data = model_to_dict_updates(device)
-            elements_data = model_to_dict_updates(elements)
-            return device_data, elements_data
-        except jwt.ExpiredSignatureError:
-            logger.error("Token has expired.")
-            return None, None  # Token expired
-        except jwt.InvalidTokenError:
-            logger.error("Invalid token.")
-            return None, None  # Invalid token
-        except Device.DoesNotExist:
-            logger.error(f"No device found with ID: {payload.get('id')}")
-            return None, None  # Device not found
-        except Exception as e:
-            logger.error(f"Error during token authentication: {e}")
-            return None, None  # Any other error
+            device = Device.objects.select_related('public_key').get(id=device_id)
 
-    async def close_connection(self, send):
-        """Helper function to close the WebSocket connection."""
-        await send({"type": "websocket.close..................................."})
+            if not device.public_key:
+                logger.error(f"Device '{device_id}' exists but has no public key assigned.")
+                return None
+            
+            return device
+        except Device.DoesNotExist:
+            logger.error(f"Device with id='{device_id}' from JWT payload not found in database.")
+            return None
+
+    async def authenticate_and_prepare_scope(self, token, scope):
+        """
+        Authentication logic based on the device_id from the JWT payload.
+        """
+        device_id = None
+        try:
+            # 1. Decode the token without signature verification to get the payload.
+            unverified_payload = jwt.decode(token, options={"verify_signature": False})
+            device_id = unverified_payload.get('id')
+            if not device_id:
+                 logger.error("JWT payload is missing 'id'.")
+                 return None
+
+            # 2. Fetch the device from the database and ensure it has a key assigned.
+            device = await self.get_device_with_key(device_id)
+            if not device:
+                # This handles both non-existent devices and devices without a key.
+                return None
+
+            # 3. Now, perform the crucial signature verification using the fetched key.
+            jwt.decode(
+                token,
+                key=device.public_key.public_key,
+                algorithms=[device.public_key.algorithm]
+            )
+            
+            # 4. If verification succeeds, fetch related data and update the scope.
+            @database_sync_to_async
+            def get_elements(dev):
+                elements = Element.objects.filter(device=dev)
+                return [model_to_dict_updates(e) for e in elements]
+            
+
+            elements = await get_elements(device)
+            
+            scope["device"] = model_to_dict_updates(device)
+            scope['element'] = elements
+            return scope
+
+        except jwt.InvalidSignatureError:
+            logger.error(f"Invalid signature for token corresponding to device_id '{device_id}'.")
+            return None
+        except jwt.ExpiredSignatureError:
+            logger.error(f"Token has expired for device_id '{device_id}'.")
+            return None
+        except jwt.InvalidTokenError as e:
+            # This catches other JWT format errors.
+            logger.error(f"Invalid token format: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during authentication: {e}", exc_info=True)
+            return None

@@ -1,15 +1,16 @@
 import os
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from node_red.middleware import AuthMiddlewareDevice
-from node_red.routing_devices import websocket_urlpatterns
-from node_red.routing_browser import websocket_urlpatterns_browser
 
 from channels.middleware import BaseMiddleware
 from channels.auth import AuthMiddlewareStack
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
+django_asgi_app = get_asgi_application()
+from node_red.middleware import AuthMiddlewareDevice
+from node_red.routing_devices import websocket_urlpatterns
+from node_red.routing_browser import websocket_urlpatterns_browser
 
 class MiddlewareDistrubuter:
     def __init__(self, inner_app):
