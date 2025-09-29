@@ -1,6 +1,5 @@
 ![logo](imgs/logo.svg)
 ![alt text](<imgs/2a7271140369153bbededfb73fefad4cdd8ed029 (2).gif>)
-![alt text](<imgs/a26a2d4f8223529c5c2b0115ba258d784abf6c21 (1).gif>)
 ![alt text](imgs/a26a2d4f8223529c5c2b0115ba258d784abf6c21.gif)
 ### **Node-RED Integration with Django**
 
