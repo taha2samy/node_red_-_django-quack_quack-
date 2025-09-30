@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save,post_delete
 from django.dispatch import receiver
-from .models import Device,Element,ElementPermissionsGroup,ElementPermissionsUser,Connections
+from .models import Device,Element,ElementPermissionsGroup,ElementPermissionsUser,Connections,JWTPublicKey
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.forms.models import model_to_dict
@@ -48,7 +48,15 @@ def _notify_elements_connection_status(device, status):
                 "element_id": str(element.id)
             }
         )
-
+@receiver(post_save, sender=JWTPublicKey)
+def on_jwt_public_key_save(sender, instance, created, **kwargs):
+    """
+    If a JWT public key is created or updated, notify all devices using this key to restart connection.
+    """
+    # Find all devices associated with this public key
+    devices = Device.objects.filter(public_key=instance)
+    for device in devices:
+        _notify_elements_connection_status(device, "disconnected")
 @receiver(post_save, sender=Connections)
 def on_connection_created(sender, instance, created, **kwargs):
     """
@@ -56,6 +64,8 @@ def on_connection_created(sender, instance, created, **kwargs):
     """
     if created:
         _notify_elements_connection_status(instance.device, "connected")
+    else:
+        _notify_elements_connection_status(instance.device, "disconnected")
 
 @receiver(post_delete, sender=Connections)
 def on_connection_deleted(sender, instance, **kwargs):
@@ -64,6 +74,7 @@ def on_connection_deleted(sender, instance, **kwargs):
     If so, notify elements that the device is 'disconnected'.
     """
     # Check if any other connections for this device still exist
+    logger.debug(f"Connection deleted for device {instance.device.id}. Checking remaining connections.")
     is_last_connection = not Connections.objects.filter(device=instance.device).exists()
     if is_last_connection:
         _notify_elements_connection_status(instance.device, "disconnected")

@@ -142,6 +142,9 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
         prevent a "No handler" error when messages are sent to a group
         it's subscribed to (alongside BrowserConsumers).
         """
+        if event.get('status')=="disconnected":
+            logger.info(f"Received element_connection_status event: {event}")
+            await self.close()
         pass
     # --------------------------------------------------------------------------
     # Helper & Internal Methods

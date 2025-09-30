@@ -3,307 +3,834 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Debugger</title>
+    <title> Quak WebSocket Client - Debugging Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
     <style>
+        :root {
+            --primary-hue: 210;
+            --primary: hsl(var(--primary-hue), 89%, 60%);
+            --primary-dark: hsl(var(--primary-hue), 89%, 50%);
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --bg-dark-primary: #111827;
+            --bg-dark-secondary: #1F2937;
+            --bg-light-primary: #F9FAFB;
+            --bg-light-secondary: #FFFFFF;
+            --text-dark-primary: #1F2937;
+            --text-dark-secondary: #6B7280;
+            --text-light-primary: #F3F4F6;
+            --text-light-secondary: #9CA3AF;
+            --border-dark: #374151;
+            --border-light: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f0f0f0;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        textarea {
-            width: 100%;
-            height: 120px;
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            resize: vertical;
-            font-family: monospace;
-        }
-
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        button:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-        }
-
-        .log-messages {
-            height: 500px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-top: 10px;
-            background-color: #fafafa;
-            font-family: monospace;
-            font-size: 0.9em;
-        }
-
-        .message {
-            margin: 5px 0;
-            padding: 8px;
-            border-radius: 4px;
-            word-break: break-word;
-        }
-
-        .sent {
-            background-color: #e3f2fd;
-            border-left: 4px solid #2196F3;
-        }
-
-        .received {
-            background-color: #e8f5e9;
-            border-left: 4px solid #4CAF50;
-        }
-
-        .system {
-            background-color: #fff3e0;
-            border-left: 4px solid #ff9800;
-        }
-
-        .error {
-            background-color: #ffebee;
-            border-left: 4px solid #f44336;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        .connected {
-            background-color: #28a745;
-        }
-
-        .disconnected {
-            background-color: #dc3545;
-        }
-
-        .config-options {
-            margin: 10px 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+            height: 100vh;
             display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body.light-theme {
+            background-color: var(--bg-light-primary);
+            color: var(--text-dark-primary);
+            --bg-primary: var(--bg-light-primary);
+            --bg-secondary: var(--bg-light-secondary);
+            --text-primary: var(--text-dark-primary);
+            --text-secondary: var(--text-dark-secondary);
+            --border-color: var(--border-light);
+        }
+        body.dark-theme {
+            background-color: var(--bg-dark-primary);
+            color: var(--text-light-primary);
+            --bg-primary: var(--bg-dark-primary);
+            --bg-secondary: var(--bg-dark-secondary);
+            --text-primary: var(--text-light-primary);
+            --text-secondary: var(--text-light-secondary);
+            --border-color: var(--border-dark);
         }
 
-        .config-options label {
+        .main-container {
+            display: grid;
+            grid-template-columns: 40% 60%;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+        .left-panel, .right-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--bg-secondary);
+        }
+        .left-panel { border-right: 1px solid var(--border-color); }
+        .panel-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .panel-section-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        .app-header {
             display: flex;
             align-items: center;
-            gap: 5px;
+            padding: 0 24px;
+            height: 55px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .app-header h1 { font-size: 1.25rem; }
+        .app-header h1 i { color: var(--primary); }
+        .header-actions { margin-left: auto; display: flex; gap: 16px; }
+
+        .btn {
+            padding: 0 16px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            height: 38px;
+            font-size: 0.9rem;
+        }
+        .btn-primary { background-color: var(--primary); color: white; border-color: var(--primary); }
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-dark); }
+        .btn-secondary { background-color: transparent; color: var(--text-primary); border-color: var(--border-color); }
+        .btn-secondary:hover:not(:disabled) { background-color: var(--bg-primary); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .icon-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2rem; padding: 5px; }
+        .icon-btn:hover { color: var(--text-primary); }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px hsla(var(--primary-hue), 89%, 60%, 0.2);
+        }
+
+        .url-bar { display: flex; gap: 12px; }
+        .message-composer {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 250px;
+        }
+        .CodeMirror {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            flex-grow: 1;
+        }
+        .composer-actions { display: flex; justify-content: flex-end; align-items: center; margin-top: 16px; }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .log-search {
+            position: relative;
+        }
+        .log-search input {
+            padding-left: 30px;
+            width: 250px;
+        }
+        .log-search i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        .log-controls { display: flex; align-items: center; gap: 16px; }
+
+        .log-messages-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+        .log-entry { margin-bottom: 16px; }
+        .log-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+        .log-badge { padding: 3px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+        .log-badge.sent { background-color: hsla(var(--primary-hue), 89%, 60%, 0.1); color: var(--primary); }
+        .log-badge.received { background-color: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .log-badge.system { background-color: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .log-badge.error { background-color: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .log-timestamp { font-size: 0.8rem; color: var(--text-secondary); }
+        .log-content {
+            background-color: var(--bg-primary);
+            padding: 12px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        .log-copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            opacity: 0.2;
+            transition: opacity 0.2s;
+        }
+        .log-content:hover .log-copy-btn { opacity: 1; }
+
+        .app-statusbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 30px;
+            padding: 0 20px;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
+        .status-indicator { display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-dot.connected { background-color: var(--success); }
+        .status-dot.disconnected { background-color: var(--danger); }
+
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 20px;
+            border-radius: 6px;
+            background-color: var(--bg-dark-secondary);
+            color: var(--text-light-primary);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal {
+            background-color: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h2 { font-size: 1.2rem; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 8px; }
+
+        .modal-lg {
+            max-width: 800px;
+        }
+        .docs-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+        .docs-section {
+            margin-bottom: 32px;
+        }
+        .docs-section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .doc-entry {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .doc-details h4 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .doc-type {
+            font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .doc-type code {
+            background-color: var(--bg-primary);
+            padding: 3px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .doc-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .doc-code pre {
+            background-color: var(--bg-dark-secondary);
+            color: var(--text-light-secondary);
+            padding: 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            height: 100%;
+        }
+        .dark-theme .doc-code pre {
+            border: 1px solid var(--border-dark);
+        }
+        .light-theme .doc-code pre {
+            background-color: #F3F4F6;
+            color: #4B5563;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="section">
-            <h2>WebSocket Connection</h2>
-            <div class="config-options">
-                <div>
-                    <input type="text" id="ws-url" value="ws://127.0.0.1:8000/browser/simple/" 
-                           style="width: 400px; padding: 8px;">
-                    <button id="connect-btn" onclick="connect()">Connect</button>
-                    <button id="disconnect-btn" onclick="disconnect()" disabled>Disconnect</button>
+<body class="dark-theme">
+
+<header class="app-header">
+  <h1>
+    <!-- أيقونة البطّة -->
+    <svg xmlns="http://www.w3.org/2000/svg"
+         width="1em" height="1em"
+         viewBox="0 0 36 36"
+         aria-hidden="true" role="img"
+         preserveAspectRatio="xMidYMid meet"
+         style="vertical-align: middle; margin-right: 0.3em;">
+      <path fill="#D99E82" d="M12.75 17.75c1.226 2.195 1.856-1.361 9.312-2.625s13.729 4.454 13.859 5.413c.132.958-4.447 9.462-9.462 9.462H10.75c-4.143 0-7.022-7.224-4-11.438c0 0 4.5-3.5 6-.812z"/>
+      <path fill="#C1694F" d="M13.008 18.136C8.02 25.073 6.969 30 10.75 30c-4.143 0-6.578-6.188-4.468-11.031c.463-1.064 1.758-2.492 1.758-2.492l4.179-.008c.162.32.599 1.365.789 1.667z"/>
+      <path fill="#E1E8ED" d="M20.062 22.75c6.672-2.682 15.729-3.171 15.859-2.212c.132.958-4.447 9.462-9.462 9.462H11.813c-4.143 0 1.232-4.429 8.249-7.25z"/>
+      <path fill="#292F33" d="M25.359 21.125c6-1.312 10.468-1.282 10.563-.587c.079.578-1.559 3.907-3.973 6.454c2.204-2.804 1.42-6.113-6.59-5.867z"/>
+      <path fill="#3E721D" d="M7.125 6.125c1.562-4.938 10.44-4.143 10.062.688c-.378 4.829-6.453 7.859-4.179 11.323c-1.586 1.38-5.016.913-6.727.833a156.185 156.185 0 0 1 1.812-3.406c2.916-5.235-2.131-5.764-.968-9.438z"/>
+      <path fill="#FFCC4D" d="M1.893 9.045c.568-1.1.549.106 3.352.142c1.554.021 1.463-.56 1.664-1.621c.041-.223.776 1.616 2.061 1.807c3.554.531 1.879 1.94 0 2.261c-.901.154-2.01.318-3.938.155c-2.519-.212-3.768-1.528-3.139-2.744z"/>
+      <path fill="#F5F8FA" d="M12.502 16.625c.044.625.506 1.511.506 1.511c-1.016 1.474-5.643 3.017-7.354 2.93a7.728 7.728 0 0 1 .627-2.097c1.844-.471 4.661-1.071 6.221-2.344z"/>
+      <path fill="#292F33" d="M11.708 6.151a1.296 1.296 0 1 1-2.591 0a1.296 1.296 0 0 1 2.591 0z"/>
+    </svg>
+    Quak Client
+  </h1>
+
+  <div class="header-actions">
+    <button class="icon-btn" id="docs-btn" title="Protocol Docs">
+      <i class="fas fa-book"></i>
+    </button>
+    <button class="icon-btn" id="settings-btn" title="Settings">
+      <i class="fas fa-cog"></i>
+    </button>
+  </div>
+</header>
+
+
+    <main class="main-container">
+        <div class="left-panel">
+            <section class="panel-section">
+                <h2 class="panel-section-title">Connection</h2>
+                <div class="url-bar">
+                    <input type="text" id="ws-url" value="ws://127.0.0.1:8000/browser/simple/">
+                    <button class="btn btn-primary" id="connect-btn">Connect</button>
+                    <button class="btn btn-secondary" id="disconnect-btn" disabled>Disconnect</button>
                 </div>
-                <div>
-                    <span class="status-indicator disconnected" id="status-indicator"></span>
-                    <span id="connection-status">Not Connected</span>
+            </section>
+            
+            <section class="panel-section message-composer">
+                <h2 class="panel-section-title">Message</h2>
+                <textarea id="message-input"></textarea>
+                <div class="composer-actions">
+                    <button class="btn btn-primary" id="send-btn" disabled>
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <div class="right-panel">
+            <div class="log-header">
+                <div class="log-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="log-search-input" placeholder="Search logs...">
+                </div>
+                <div class="log-controls">
+                    <label for="auto-scroll-toggle" style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer;">
+                        <input type="checkbox" id="auto-scroll-toggle" checked> Auto-scroll
+                    </label>
+                    <button class="icon-btn" id="clear-log-btn" title="Clear Log"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="log-messages-container" id="log-messages"></div>
+        </div>
+    </main>
+
+    <footer class="app-statusbar">
+        <div class="status-left">
+            <div class="status-indicator">
+                <div class="status-dot disconnected" id="status-bar-dot"></div>
+                <span id="status-bar-text">DISCONNECTED</span>
+            </div>
+        </div>
+        <div class="status-right">
+            <span>Logs: <span id="log-count">0</span></span>
+        </div>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="modal-overlay" id="settings-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="icon-btn" id="close-settings-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="theme-select">Theme</label>
+                    <select class="btn btn-secondary" id="theme-select" style="width: 100%; height: 38px;">
+                        <option value="dark-theme">Dark</option>
+                        <option value="light-theme">Light</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="max-logs-input">Max Log Entries</label>
+                    <input type="number" id="max-logs-input" value="200" min="10" max="1000">
                 </div>
             </div>
         </div>
-
-        <div class="section">
-            <h2>Send Message</h2>
-            <textarea id="message-input" placeholder='Enter JSON message... Example: {"action": "ping", "data": "test"}'></textarea>
-            <div class="config-options">
-                <button onclick="sendMessage()" id="send-btn" disabled>Send</button>
-                <button onclick="formatJson()">Format JSON</button>
-                <button onclick="clearLog()">Clear Log</button>
-                <label>
-                    <input type="checkbox" id="auto-format" checked> Auto-format JSON
-                </label>
-                <label>
-                    <input type="checkbox" id="auto-scroll" checked> Auto-scroll
-                </label>
+    </div>
+    
+    <div class="modal-overlay" id="docs-modal-overlay">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2><i class="fas fa-book-open" style="color: var(--primary);"></i> Protocol Reference</h2>
+                <button class="icon-btn" id="close-docs-btn">&times;</button>
             </div>
-        </div>
+            <div class="modal-body docs-container">
+                <div class="docs-section">
+                    <h3>Client → Server Messages</h3>
+                    <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Subscribe</h4>
+                            <p class="doc-type">type: <code>subscribe</code></p>
+                            <p class="doc-desc">A request to join an element's channel to receive real-time updates.</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "subscribe",
+"element_id": "..."
+}</code></pre></div>
+                    </div>
+                    <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Unsubscribe</h4>
+                            <p class="doc-type">type: <code>unsubscribe</code></p>
+                            <p class="doc-desc">A request to leave an element's channel to stop receiving updates.</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "unsubscribe",
+"element_id": "..."
+}</code></pre></div>
+                    </div>
+                    <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Publish Message</h4>
+                            <p class="doc-type">type: <code>message_element</code></p>
+                            <p class="doc-desc">Sends a message from the client to the element's channel. Requires "Read/Write" (<code>RC</code>) permissions.</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "message_element",
+"element_id": "...",
+"message": { "value": 25.5 }
+}</code></pre></div>
+                    </div>
+                </div>
 
-        <div class="section">
-            <h2>Message Log</h2>
-            <div class="log-messages" id="log-messages"></div>
+                <div class="docs-section">
+                    <h3>Server → Client Messages</h3>
+                     <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Subscription Confirmation</h4>
+                            <p class="doc-type">type: <code>subscribe</code></p>
+                            <p class="doc-desc">Confirms a successful subscription. Provides initial state, permissions, and element details.</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "subscribe",
+"subscribed": true,
+"permissions": "RC",
+"details": { ... },
+"connected": true
+}</code></pre></div>
+                    </div>
+                     <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Unsubscribe Confirmation</h4>
+                            <p class="doc-type">type: <code>unsubscribe</code></p>
+                            <p class="doc-desc">Confirms an unsubscription, either client-initiated or forced by the server (e.g., due to revoked permissions).</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "unsubscribe",
+"unsubscribe": true,
+"reason": "Permission revoked"
+}</code></pre></div>
+                    </div>
+                     <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Element Message (Data)</h4>
+                            <p class="doc-type">type: <code>message_element</code></p>
+                            <p class="doc-desc">The primary message for broadcasting real-time data or cached points to the browser.</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "message_element",
+"message": { ... },
+...
+}</code></pre></div>
+                    </div>
+                    <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Permissions Update</h4>
+                            <p class="doc-type">type: <code>permissions_update</code></p>
+                            <p class="doc-desc">Sent when a user's permissions for an element change (e.g., from `RC` to `R`).</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "permissions_update",
+"element_id": "...",
+"permissions": "R"
+}</code></pre></div>
+                    </div>
+                    <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Element Connection Status</h4>
+                            <p class="doc-type">type: <code>element_connection_status</code></p>
+                            <p class="doc-desc">Informs the client about the connection status of the underlying element (e.g., Node-RED connection).</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "element_connection_status",
+"element_id": "...",
+"connected": false
+}</code></pre></div>
+                    </div>
+                     <div class="doc-entry">
+                        <div class="doc-details">
+                            <h4>Error Message</h4>
+                            <p class="doc-type">type: <code>error</code></p>
+                            <p class="doc-desc">Sent by the server when an error occurs, such as a malformed request or insufficient permissions.</p>
+                        </div>
+                        <div class="doc-code"><pre><code>{
+"type": "error",
+"error_code": "permission_denied",
+...
+}</code></pre></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
     <script>
-        let ws = null;
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
-        const reconnectDelay = 3000;
-
-        function connect() {
-            const wsUrl = document.getElementById('ws-url').value;
-            ws = new WebSocket(wsUrl);
-
-            ws.onopen = () => {
-                logSystemMessage('Connected to server');
-                updateConnectionStatus(true);
-                reconnectAttempts = 0;
+        document.addEventListener('DOMContentLoaded', () => {
+            const appState = {
+                ws: null,
+                editor: null,
+                settings: {
+                    theme: 'dark-theme',
+                    maxLogs: 200,
+                    autoScroll: true,
+                },
+                logCount: 0,
             };
 
-            ws.onmessage = (event) => {
-                try {
-                    const data = event.data instanceof Blob ? event.data.text() : event.data;
-                    Promise.resolve(data).then(text => {
-                        const message = JSON.parse(text);
-                        logMessage('received', JSON.stringify(message, null, 
-                            document.getElementById('auto-format').checked ? 2 : null));
-                    });
-                } catch (e) {
-                    logMessage('received', event.data, true);
+            const DOM = {
+                body: document.body,
+                connectBtn: document.getElementById('connect-btn'),
+                disconnectBtn: document.getElementById('disconnect-btn'),
+                sendBtn: document.getElementById('send-btn'),
+                wsUrlInput: document.getElementById('ws-url'),
+                logContainer: document.getElementById('log-messages'),
+                logSearchInput: document.getElementById('log-search-input'),
+                autoScrollToggle: document.getElementById('auto-scroll-toggle'),
+                clearLogBtn: document.getElementById('clear-log-btn'),
+                statusBarDot: document.getElementById('status-bar-dot'),
+                statusBarText: document.getElementById('status-bar-text'),
+                logCount: document.getElementById('log-count'),
+                toast: document.getElementById('toast'),
+                settingsBtn: document.getElementById('settings-btn'),
+                settingsModal: document.getElementById('settings-modal-overlay'),
+                closeSettingsBtn: document.getElementById('close-settings-btn'),
+                themeSelect: document.getElementById('theme-select'),
+                maxLogsInput: document.getElementById('max-logs-input'),
+                docsBtn: document.getElementById('docs-btn'),
+                docsModal: document.getElementById('docs-modal-overlay'),
+                closeDocsBtn: document.getElementById('close-docs-btn'),
+            };
+
+            function init() {
+                initEditor();
+                loadSettings();
+                applySettings();
+                attachEventListeners();
+                log('system', 'Welcome! Enter a WebSocket URL and click Connect.');
+            }
+
+            function initEditor() {
+                appState.editor = CodeMirror.fromTextArea(document.getElementById('message-input'), {
+                    mode: { name: "javascript", json: true },
+                    theme: "material-darker",
+                    lineNumbers: true,
+                    autoCloseBrackets: true,
+                });
+                const initialMessage = JSON.stringify({ type: "subscribe", element_id: "..." }, null, 2);
+                appState.editor.setValue(initialMessage);
+            }
+
+            function loadSettings() {
+                const savedSettings = JSON.parse(localStorage.getItem('wsClientSettings'));
+                if (savedSettings) {
+                    appState.settings = { ...appState.settings, ...savedSettings };
                 }
-            };
-
-            ws.onerror = (error) => {
-                logMessage('error', `Connection error: ${error.message || 'Unknown error'}`);
-            };
-
-            ws.onclose = (event) => {
-                updateConnectionStatus(false);
-                if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
-                    logSystemMessage(`Reconnecting in ${reconnectDelay/1000} seconds...`);
-                    setTimeout(connect, reconnectDelay);
-                    reconnectAttempts++;
-                }
-            };
-        }
-
-        function disconnect() {
-            if (ws) {
-                ws.close(1000, 'User initiated disconnect');
-                ws = null;
             }
-        }
 
-        function sendMessage() {
-            const messageInput = document.getElementById('message-input');
-            try {
-                const message = JSON.parse(messageInput.value);
-                ws.send(JSON.stringify(message));
-                logMessage('sent', JSON.stringify(message, null, 
-                    document.getElementById('auto-format').checked ? 2 : null));
-                messageInput.value = '';
-            } catch (e) {
-                logMessage('error', `Invalid JSON: ${e.message}`);
+            function saveSettings() {
+                localStorage.setItem('wsClientSettings', JSON.stringify(appState.settings));
             }
-        }
 
-        function updateConnectionStatus(connected) {
-            const indicator = document.getElementById('status-indicator');
-            const statusText = document.getElementById('connection-status');
-            const connectBtn = document.getElementById('connect-btn');
-            const disconnectBtn = document.getElementById('disconnect-btn');
-            const sendBtn = document.getElementById('send-btn');
-
-            if (connected) {
-                indicator.className = 'status-indicator connected';
-                statusText.textContent = 'Connected';
-                connectBtn.disabled = true;
-                disconnectBtn.disabled = false;
-                sendBtn.disabled = false;
-            } else {
-                indicator.className = 'status-indicator disconnected';
-                statusText.textContent = 'Disconnected';
-                connectBtn.disabled = false;
-                disconnectBtn.disabled = true;
-                sendBtn.disabled = true;
+            function applySettings() {
+                DOM.body.className = appState.settings.theme;
+                DOM.themeSelect.value = appState.settings.theme;
+                DOM.maxLogsInput.value = appState.settings.maxLogs;
             }
-        }
-
-        function logMessage(type, message, isError = false) {
-            const log = document.getElementById('log-messages');
-            const messageElement = document.createElement('div');
-            messageElement.className = `message ${type} ${isError ? 'error' : ''}`;
-            messageElement.innerHTML = `
-                <div class="timestamp">[${new Date().toLocaleTimeString()}]</div>
-                <div class="content">${message}</div>
-            `;
-            log.appendChild(messageElement);
             
-            if (document.getElementById('auto-scroll').checked) {
-                log.scrollTop = log.scrollHeight;
+            function attachEventListeners() {
+                DOM.connectBtn.addEventListener('click', connect);
+                DOM.disconnectBtn.addEventListener('click', disconnect);
+                DOM.sendBtn.addEventListener('click', sendMessage);
+                DOM.clearLogBtn.addEventListener('click', clearLog);
+                DOM.logSearchInput.addEventListener('input', filterLogs);
+                DOM.autoScrollToggle.addEventListener('change', (e) => appState.settings.autoScroll = e.target.checked);
+                
+                DOM.settingsBtn.addEventListener('click', () => DOM.settingsModal.classList.add('active'));
+                DOM.closeSettingsBtn.addEventListener('click', () => DOM.settingsModal.classList.remove('active'));
+                DOM.settingsModal.addEventListener('click', (e) => {
+                    if (e.target === DOM.settingsModal) DOM.settingsModal.classList.remove('active');
+                });
+                
+                DOM.docsBtn.addEventListener('click', () => DOM.docsModal.classList.add('active'));
+                DOM.closeDocsBtn.addEventListener('click', () => DOM.docsModal.classList.remove('active'));
+                DOM.docsModal.addEventListener('click', (e) => {
+                    if (e.target === DOM.docsModal) DOM.docsModal.classList.remove('active');
+                });
+
+                DOM.themeSelect.addEventListener('change', (e) => {
+                    appState.settings.theme = e.target.value;
+                    applySettings();
+                    saveSettings();
+                });
+                DOM.maxLogsInput.addEventListener('change', (e) => {
+                    appState.settings.maxLogs = parseInt(e.target.value, 10);
+                    saveSettings();
+                });
+
+                appState.editor.on('keydown', (instance, e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
             }
-        }
 
-        function logSystemMessage(message) {
-            const log = document.getElementById('log-messages');
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message system';
-            messageElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            log.appendChild(messageElement);
-        }
-
-        function clearLog() {
-            document.getElementById('log-messages').innerHTML = '';
-        }
-
-        function formatJson() {
-            const messageInput = document.getElementById('message-input');
-            try {
-                const parsed = JSON.parse(messageInput.value);
-                messageInput.value = JSON.stringify(parsed, null, 2);
-            } catch (e) {
-                logMessage('error', `Formatting error: ${e.message}`);
+            function connect() {
+                if (appState.ws) return;
+                const url = DOM.wsUrlInput.value.trim();
+                if (!url) {
+                    log('error', 'URL cannot be empty.');
+                    return;
+                }
+                log('system', `Connecting to ${url}...`);
+                DOM.connectBtn.disabled = true;
+                
+                try {
+                    appState.ws = new WebSocket(url);
+                    appState.ws.onopen = handleOpen;
+                    appState.ws.onmessage = handleMessage;
+                    appState.ws.onclose = handleClose;
+                    appState.ws.onerror = handleError;
+                } catch (error) {
+                    log('error', `Connection failed: ${error.message}`);
+                    updateConnectionStatus(false);
+                }
             }
-        }
 
-        // Keyboard shortcuts
-        document.getElementById('message-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                sendMessage();
-                e.preventDefault();
+            function disconnect() {
+                if (appState.ws) {
+                    appState.ws.close(1000, 'User disconnected');
+                }
             }
-        });
+            
+            const handleOpen = () => {
+                log('system', 'Connection established.');
+                showToast('Connected!');
+                updateConnectionStatus(true);
+            };
 
-        // Load/Save messages to localStorage
-        window.addEventListener('beforeunload', () => {
-            const messages = document.getElementById('log-messages').innerHTML;
-            localStorage.setItem('websocketDebuggerMessages', messages);
-        });
+            const handleMessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    log('received', JSON.stringify(message, null, 2));
+                } catch (e) {
+                    log('received', event.data);
+                }
+            };
 
-        window.addEventListener('load', () => {
-            const savedMessages = localStorage.getItem('websocketDebuggerMessages');
-            if (savedMessages) {
-                document.getElementById('log-messages').innerHTML = savedMessages;
+            const handleClose = (event) => {
+                log('system', `Connection closed. Code: ${event.code}`);
+                showToast('Disconnected', 'error');
+                updateConnectionStatus(false);
+            };
+            
+            const handleError = () => {
+                log('error', 'A WebSocket error occurred.');
+                updateConnectionStatus(false);
+            };
+
+            function sendMessage() {
+                const messageText = appState.editor.getValue();
+                if (!messageText.trim() || !appState.ws || appState.ws.readyState !== WebSocket.OPEN) return;
+                try {
+                    const parsed = JSON.parse(messageText);
+                    appState.ws.send(JSON.stringify(parsed));
+                    log('sent', JSON.stringify(parsed, null, 2));
+                } catch(e) {
+                    log('error', `Invalid JSON: ${e.message}`);
+                }
             }
+
+            function updateConnectionStatus(isConnected) {
+                DOM.connectBtn.disabled = isConnected;
+                DOM.disconnectBtn.disabled = !isConnected;
+                DOM.sendBtn.disabled = !isConnected;
+                DOM.wsUrlInput.disabled = isConnected;
+                DOM.statusBarDot.className = `status-dot ${isConnected ? 'connected' : 'disconnected'}`;
+                DOM.statusBarText.textContent = isConnected ? 'CONNECTED' : 'DISCONNECTED';
+                if (!isConnected) appState.ws = null;
+            }
+
+            function log(type, content) {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                const time = new Date().toLocaleTimeString();
+                
+                const copyBtnHTML = `<button class="log-copy-btn" title="Copy"><i class="far fa-copy"></i></button>`;
+                
+                entry.innerHTML = `
+                    <div class="log-meta">
+                        <span class="log-badge badge-${type}">${type}</span>
+                        <span class="log-timestamp">${time}</span>
+                    </div>
+                    <div class="log-content">${content}${copyBtnHTML}</div>
+                `;
+
+                entry.querySelector('.log-copy-btn').addEventListener('click', () => {
+                    navigator.clipboard.writeText(content);
+                    showToast('Copied to clipboard!');
+                });
+
+                DOM.logContainer.appendChild(entry);
+                appState.logCount++;
+                updateLogCount();
+                
+                trimLogs();
+
+                if (appState.settings.autoScroll) {
+                    DOM.logContainer.scrollTop = DOM.logContainer.scrollHeight;
+                }
+            }
+            
+            function clearLog() {
+                DOM.logContainer.innerHTML = '';
+                appState.logCount = 0;
+                updateLogCount();
+                log('system', 'Log cleared.');
+            }
+
+            function updateLogCount() {
+                DOM.logCount.textContent = appState.logCount;
+            }
+
+            function trimLogs() {
+                while (DOM.logContainer.children.length > appState.settings.maxLogs) {
+                    DOM.logContainer.removeChild(DOM.logContainer.firstChild);
+                    appState.logCount--;
+                }
+            }
+            
+            function filterLogs() {
+                const query = DOM.logSearchInput.value.toLowerCase();
+                const entries = DOM.logContainer.querySelectorAll('.log-entry');
+                entries.forEach(entry => {
+                    const content = entry.querySelector('.log-content').textContent.toLowerCase();
+                    entry.style.display = content.includes(query) ? 'block' : 'none';
+                });
+            }
+
+            let toastTimeout;
+            function showToast(message, type = 'success') {
+                clearTimeout(toastTimeout);
+                DOM.toast.textContent = message;
+                DOM.toast.className = `toast show toast-${type}`;
+                toastTimeout = setTimeout(() => {
+                    DOM.toast.classList.remove('show');
+                }, 3000);
+            }
+
+            init();
         });
     </script>
 </body>
