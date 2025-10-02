@@ -1,8 +1,22 @@
 from django.contrib import admin
-from .models import Device, Element, ElementPermissionsUser, ElementPermissionsGroup,Connections,JWTPublicKey
+from .models import Device, Element, ElementPermissionsUser, ElementPermissionsGroup,Connections,JWTPublicKey,ElementDetailsStyle
+
 import jwt
 from datetime import datetime, timedelta
 from django.utils.html import format_html
+class ElementDetailsStyleAdmin(admin.ModelAdmin):
+    list_display = ("id", "element", "name", "short_details")
+    list_filter = ("element",)
+    search_fields = ("name", "element__name")  
+    ordering = ("element", "name")
+
+    def short_details(self, obj):
+        if obj.details:
+            return str(obj.details)[:75] + ("..." if len(str(obj.details)) > 75 else "")
+        return "-"
+    short_details.short_description = "Details"
+
+admin.site.register(ElementDetailsStyle, ElementDetailsStyleAdmin)
 
 
 class DeviceAdmin(admin.ModelAdmin):

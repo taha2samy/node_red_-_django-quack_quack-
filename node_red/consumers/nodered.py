@@ -51,17 +51,26 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
     # --------------------------------------------------------------------------
 
     async def receive(self, text_data):
-        """
-        Receives a message from the WebSocket, processes it, updates the cache,
-        and broadcasts it to the relevant element group.
-        """
-        try:
-            payload = orjson.loads(text_data)
-            element_id = payload['element_id']
-            message = payload['message']
-
-            if element_id in self.elements_ids:
-                self._update_element_cache(element_id, message)
+            """
+            Receives a message from the WebSocket, processes it, updates the cache,
+            and broadcasts it to the relevant element group.
+            """
+            try:
+                payload = orjson.loads(text_data)
+                element_id = payload['element_id']
+                message = payload['message']
+                auth = {
+                    "user_id": payload.get("auth", {}).get("user_id", "coming from Device"),
+                    "username": payload.get("auth", {}).get("username", "coming from Device")
+                }
+                # Validate that the element_id belongs to the connected device
+                if element_id not in self.elements_ids:
+                    logger.warning(
+                        f"Device {self.device.get('id')} sent data for an unauthorized element: {element_id}"
+                    )
+                    return
+  
+                self._update_element_cache(element_id, message,auth)
                 
                 await self.channel_layer.group_send(
                     element_id,
@@ -70,13 +79,17 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
                         'element_id': element_id,
                         'message': message,
                         'origin_channel': self.channel_name,
+                        "auth": auth
+             
+                  
+                        
                     }
                 )
-        except (orjson.JSONDecodeError, KeyError) as e:
-            # Log the error instead of silently passing
-            logger.warning(
-                f"Invalid message format from {self.channel_name}. Error: {e}. Data: {text_data}"
-            )
+            except (orjson.JSONDecodeError, KeyError) as e:
+                # Log the error instead of silently passing
+                logger.warning(
+                    f"Invalid message format from {self.channel_name}. Error: {e}. Data: {text_data}"
+                )
 
     async def forward_element_message(self, event):
         """
@@ -88,6 +101,10 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
                 text_data=orjson.dumps({
                     'element_id': event['element_id'],
                     'message': event['message'],
+                    "auth": {
+                        "user_id": event["auth"].get("user_id", "coming from Device"),
+                        "username": event["auth"].get("username", "coming from Device")
+                    }
                 }).decode('utf-8')
             )
 
@@ -172,14 +189,14 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
             *(self.channel_layer.group_discard(group, self.channel_name) for group in groups_to_leave)
         )
 
-    def _update_element_cache(self, element_id, message):
+    def _update_element_cache(self, element_id, message, auth):
         """Updates the cache for a given element with a new message."""
         element_data = self.elements_data.get(element_id, {})
         cache_key = f"cache:{element_id}"
         # Provide a default maxlen for the deque
         max_points = element_data.get('points', 100)
         queue = cache.get(cache_key, deque(maxlen=max_points))
-        queue.append(message)
+        queue.append({"message": message, "auth": auth})
         cache.set(cache_key, queue, timeout=None)
 
     # --------------------------------------------------------------------------

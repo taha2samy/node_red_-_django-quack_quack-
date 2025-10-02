@@ -1,42 +1,36 @@
-{% extends "cards\templates\dashboard.html" %}
+{% extends "cards/templates/dashboard.html" %}
 
 {% load static %}
 {% block title %}dashboard{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <div class="row">
-        
+<div class="row">
+  <div class="col-md-4">
+    {% include "cards/templates/Gauge.html" with element=elements.0 %}
+  </div>
+  
+  <div class="col-md-4">
+    {% include "cards/templates/Gauge.html" with element=elements.1 %}
+  </div>
+  
+  <div class="col-md-6">
+    {% include "cards/templates/Chart.html" with element=elements.2 %}
+  </div>
+  
+  <div class="col-md-6">
+    {% include "cards/templates/Chart.html" with element=elements.3 %}
+  </div>
+    <div class="col-md-4">
+    {% include "cards/templates/SwitchButton.html" with element=elements.4 %}
+  </div>
+  
+  <div class="col-md-4">
+    {% include "cards/templates/SwitchButton.html" with element=elements.5 %}
+  </div>
+  
+</div>
 
-          <div class="col-md-4">
-            {% include "cards/templates/Gauge.html" with element=elements.0 %}
-        </div>
-        
-        <div class="col-md-4">
-            {% include "cards/templates/Chart.html" with element=elements.0 %}
-        </div>
-        <div class="col-md-4">
-            {% include "cards/templates/Chart.html" with element=elements.1 %}
-        </div>
-        <div class="col-md-4">
-            {% include "cards/templates/SwitchButton.html" with element=elements.2 %}
-        </div>
-        <div class="col-md-4">
-            {% include "cards/templates/Slider.html" with element=elements.3 %}
-        </div>
-        <div class="col-md-4">
-        <div class="col-md-4">
-        </div>
-        
-        <div class="col-md-4">
-        </div>
-        
-        <div class="col-md-4">
-        </div>
-        
-        <div class="col-md-4">
-        </div>
-    </div>
 </div>
 <script src="{% static 'js/websocket.js' %}"></script>
 {% endblock %}

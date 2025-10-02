@@ -1,30 +1,56 @@
 {% load filters %}
-{% with elment_new_id=x|append_uuid %}
+{% with new_element_id=element.id|append_uuid %}
 
 <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>{{ element.details.title|default:"title" }} </span>
-                <span class="status-indicator" id="{{elment_new_id}}-status"></span>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="{{elment_new_id}}" width="200" height="200" style="width: 200px; height: 200px;"></canvas>
-                </div>
-                <p class="text-center">Current Value: <span id="{{elment_new_id}}-value">59</span> {{ element.details.unit|default:"Count"|safe }}</p>
-            </div>
+    <div class="card-header">
+        <span>{{ element.details.title|default:"Chart Title" }}</span>
+        
+        <div class="status-indicator-group"> 
+            <span class="status-indicator" id="{{ new_element_id }}-connection-status" title="Device Connection Status">
+                <i class="fas fa-plug"></i>
+                <span class="status-text">Offline</span>
+            </span>
+            <span class="status-indicator" id="{{ new_element_id }}-subscription-status" title="Data Subscription Status">
+                <i class="far fa-bell-slash"></i>
+                <span class="status-text">Unsubscribed</span>
+            </span>
+            <span class="status-indicator" id="{{ new_element_id }}-permissions-status" title="Your Permissions">
+                <i class="fas fa-key"></i>
+                <span class="status-text">None</span>
+            </span>
         </div>
+    </div>
+    <div class="card-body">
+        <div class="chart-container" style="height: 250px; position: relative;">
+            <canvas id="{{ new_element_id }}"></canvas>
+        </div>
+        <p class="text-center mt-3">
+            Current Value: <span id="{{ new_element_id }}-value">--</span>
+            <span class="unit">{{ element.details.unit|default:"" }}</span>
+        </p>
+    </div>
+</div>
+
 
 <script>
+    (function() {
+        // Ensure the global registry exists
+        if (typeof window.Elements === 'undefined') window.Elements = {};
+        if (!window.Elements["{{ element.id }}"]) window.Elements["{{ element.id }}"] = [];
+        
+        const detailsDataElement = document.getElementById("{{ new_element_id|add:'-details-data' }}");
+        let detailsObject = {};
+        
+        if (detailsDataElement) {
+            detailsObject = JSON.parse(detailsDataElement.textContent);
+        }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        if (typeof window.all_elements === 'undefined') {
-            window.all_elements = {};
-        }
-        if (!window.all_elements["{{element.id}}"]) {
-            window.all_elements["{{element.id}}"] = [];
-        }
-        window.all_elements["{{element.id}}"].push(new SensorChart("{{elment_new_id}}", {{element.details|default:"{}"|safe}}));
-    });
+        const newChartInstance = new SensorChart(
+            "{{ new_element_id }}",
+            detailsObject
+        );
+        window.Elements["{{ element.id }}"].push(newChartInstance);
+    })();
 </script>
 
 {% endwith %}

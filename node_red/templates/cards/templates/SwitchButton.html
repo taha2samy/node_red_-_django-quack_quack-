@@ -1,32 +1,53 @@
 {% load filters %}
-{% with elment_new_id=x|append_uuid %}
+{% with new_element_id=element.id|append_uuid %}
 
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        {{ element.details.title|default:"title" }}
-        <span class="status-indicator" id="{{ elment_new_id }}-status"></span>
-    </div>
-
-    <div class="card-body">
-        <p class="card-text">{{element.details.description|default:"description"}}</p>
+    <div class="card-header">
+        <span>{{ element.details.title|default:"Switch Control" }}</span>
         
-        <!-- زر التبديل -->
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="{{elment_new_id}}-input">
-            <label class="form-check-label" id="{{elment_new_id}}-label" for="{{elment_new_id}}-input"></label>
+        <div class="status-indicator-group"> 
+            <span class="status-indicator" id="{{ new_element_id }}-connection-status" title="Device Connection Status">
+                <i class="fas fa-plug"></i>
+                <span class="status-text">Offline</span>
+            </span>
+            <span class="status-indicator" id="{{ new_element_id }}-subscription-status" title="Data Subscription Status">
+                <i class="far fa-bell-slash"></i>
+                <span class="status-text">Unsubscribed</span>
+            </span>
+            <span class="status-indicator" id="{{ new_element_id }}-permissions-status" title="Your Permissions">
+                <i class="fas fa-key"></i>
+                <span class="status-text">None</span>
+            </span>
+        </div>
+    </div>
+    <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 100px;">
+        <div class="form-check form-switch fs-4">
+            <input class="form-check-input" type="checkbox" id="{{ new_element_id }}-input" role="switch">
+            <label class="form-check-label" id="{{ new_element_id }}-label" for="{{ new_element_id }}-input"></label>
         </div>
     </div>
 </div>
 
+{{ element.details|json_script:new_element_id|add:"-details-data" }}
+
 <script>
     (function() {
-        if (typeof window.all_elements === 'undefined') {
-            window.all_elements = {};
+        if (typeof window.Elements === 'undefined') window.Elements = {};
+        if (!window.Elements["{{ element.id }}"]) window.Elements["{{ element.id }}"] = [];
+        
+        const detailsDataElement = document.getElementById("{{ new_element_id|add:'-details-data' }}");
+        let detailsObject = {};
+        
+        if (detailsDataElement) {
+            detailsObject = JSON.parse(detailsDataElement.textContent);
         }
-        if (!window.all_elements["{{element.id}}"]) {
-            window.all_elements["{{element.id}}"] = [];
-        }
-        window.all_elements["{{element.id}}"].push(new SwitchButton(elementId="{{ elment_new_id }}", details={{element.details|default:"{}"|safe}},"{{element.id}}"));
+
+        const newSwitchInstance = new SwitchButton(
+            "{{ new_element_id }}",
+            "{{ element.id }}",
+            detailsObject
+        );
+        window.Elements["{{ element.id }}"].push(newSwitchInstance);
     })();
 </script>
 

@@ -1,100 +1,158 @@
 class SensorChart {
-    constructor(elementId, details) {
-        this.elementId = elementId;
-        this.details = details;
-        this._permissions="RC"
-
-        // إعداد الرسم البياني باستخدام Chart.js
-        const ctx = document.getElementById(this.elementId).getContext('2d');
-        this.chart = new Chart(ctx, {
-            type: details.type||'line', 
-            data: {
-                labels: Array.from({ length: 10 }, (_, i) => i + 1), 
-                datasets: [{
-                    label: this.details.title || 'Sensor Data',
-                    data: Array(this.details.max_point||10).fill(0),
-                    
-                    
-                    borderColor: this.details.border_color ||'rgba(0, 123, 255, 1)',
-                    backgroundColor:this.details.background_color||'rgba(0, 123, 255, 0.2)',
-                    borderWidth: this.border_width || 2,
-                    fill: this.details.fill == 1 ? true : false
-                }]
+    constructor(canvasId, details) {
+        this.canvasId = canvasId;
+        this.details = {
+            title: "Chart",
+            unit: "",
+            maxPoints: 30,
+            chartType: 'line',
+            datasetOptions: {
+                label: (details && details.title) ? details.title : "Sensor Data",
+                borderColor: 'rgba(0, 123, 255, 1)',
+                backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.1
             },
-            options: {
+            chartOptions: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     x: {
-                        beginAtZero: true
+                        display: true,
+                        title: { display: false, text: 'Time' }
                     },
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: { display: false, text: 'Value' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
                     }
                 }
-            }
-        });
+            },
+            ...details
+        };
+
+        this._permissions = null;
+
+        this.connectionStatusEl = document.getElementById(`${this.canvasId}-connection-status`);
+        this.subscriptionStatusEl = document.getElementById(`${this.canvasId}-subscription-status`);
+        this.permissionsStatusEl = document.getElementById(`${this.canvasId}-permissions-status`);
+        this.valueEl = document.getElementById(`${this.canvasId}-value`);
+
+        const chartConfig = {
+            type: this.details.chartType,
+            data: {
+                labels: [],
+                datasets: [{
+                    ...this.details.datasetOptions,
+                    data: []
+                }]
+            },
+            options: this.details.chartOptions
+        };
+
+        const ctx = document.getElementById(this.canvasId).getContext('2d');
+        this.chart = new Chart(ctx, chartConfig);
+
+        this.setStatus('disconnected');
+        this.setSubscriptionStatus(false);
+        this.setPermissions(null);
     }
 
-    setValue(values) {
-        if (Array.isArray(values)) {
-            if (values.length === 2) {
-                // إذا كانت القائمة تحتوي على عنصرين: x, y
-                const [x, y] = values;
-                this.chart.data.labels.push(x); // تحديث محور x
-                this.chart.data.labels.shift(); // إزالة أقدم قيمة في محور x
-                this.chart.data.datasets[0].data.push(y); // تحديث محور y
-                this.chart.data.datasets[0].data.shift(); // إزالة أقدم قيمة في محور y
-                document.getElementById(this.elementId + "-value").textContent = y; // تحديث القيمة المعروضة
-            } else if (values.length === 1) {
-                // إذا كانت القائمة تحتوي على عنصر واحد: y فقط
-                const y = values[0];
-                const nextX = this.chart.data.labels.length + 1; // توليد قيمة تلقائية لمحور x
-                this.chart.data.labels.push(nextX); // تحديث محور x
-                this.chart.data.labels.shift(); // إزالة أقدم قيمة في محور x
-                this.chart.data.datasets[0].data.push(y); // تحديث محور y
-                this.chart.data.datasets[0].data.shift(); // إزالة أقدم قيمة في محور y
-                document.getElementById(this.elementId + "-value").textContent = y; // تحديث القيمة المعروضة
-            } else {
+    addPoint(point) {
+        const xValue = point.x || new Date().toLocaleTimeString();
+        const yValue = point.y;
 
-            }
-        } else {
-            
-            const nextX = this.chart.data.labels.length + 1; // توليد قيمة تلقائية لمحور x
-            this.chart.data.labels.push(nextX); // تحديث محور x
-            this.chart.data.labels.shift(); // إزالة أقدم قيمة في محور x
-            this.chart.data.datasets[0].data.push(values); // تحديث محور y
-            this.chart.data.datasets[0].data.shift(); // إزالة أقدم قيمة في محور y
-            document.getElementById(this.elementId + "-value").textContent = values; // تحديث القيمة المعروضة
+        if (typeof yValue === 'undefined') return;
 
+        this.chart.data.labels.push(xValue);
+        this.chart.data.datasets[0].data.push(yValue);
+
+        while (this.chart.data.labels.length > this.details.maxPoints) {
+            this.chart.data.labels.shift();
+            this.chart.data.datasets[0].data.shift();
         }
+        
+        if (this.valueEl) {
+            this.valueEl.textContent = yValue;
+        }
+
+        this.chart.update('none');
+    }
+
+    setValue(message) {
+        console.log(message);
+        console.log(222222222222222222222222222222);
+        this.addPoint(message);
+    }
+
+    loadHistory(messages) {
+        this.chart.data.labels = [];
+        this.chart.data.datasets[0].data = [];
+        
+        messages.forEach(msg => this.addPoint(msg));
+
         this.chart.update();
     }
 
-
     setStatus(status) {
-        const statusElement = document.getElementById(this.elementId + "-status");
-        if (status === 'connected' || status == "1") {
-            statusElement.className = 'status-indicator status-active';
-        } else if (status === 'disconnected' || status == "0") {
-            statusElement.className = 'status-indicator status-inactive';
+        if (!this.connectionStatusEl) return;
+        const statusText = this.connectionStatusEl.querySelector('.status-text');
+        this.connectionStatusEl.classList.remove('status-active', 'status-inactive');
+
+        if (status === 'connected') {
+            this.connectionStatusEl.classList.add('status-active');
+            statusText.textContent = "Online";
         } else {
-            statusElement.className = 'status-indicator';
+            this.connectionStatusEl.classList.add('status-inactive');
+            statusText.textContent = "Offline";
         }
     }
+
+    setSubscriptionStatus(isSubscribed) {
+        if (!this.subscriptionStatusEl) return;
+        const icon = this.subscriptionStatusEl.querySelector('i');
+        const statusText = this.subscriptionStatusEl.querySelector('.status-text');
+        
+        this.subscriptionStatusEl.classList.toggle('subscribed', isSubscribed);
+        icon.className = isSubscribed ? 'fas fa-bell' : 'far fa-bell-slash';
+        statusText.textContent = isSubscribed ? 'Subscribed' : 'Unsubscribed';
+
+        if (!isSubscribed) {
+            this.setPermissions(null);
+        }
+    }
+
 
 
     get permissions() {
         return this._permissions;
     }
-
-    // Setter for permissions
+    
     set permissions(value) {
         this._permissions = value;
-
-        
-
-        // Perform additional logic here if needed
+        this.setPermissions(value);
     }
-
-}
     
+    setPermissions(permValue) {
+        if (!this.permissionsStatusEl) return;
+        const statusText = this.permissionsStatusEl.querySelector('.status-text');
+        
+        this.permissionsStatusEl.classList.remove('permissions-rc', 'permissions-r');
+
+        if (permValue === 'RC') {
+            this.permissionsStatusEl.classList.add('permissions-rc');
+            statusText.textContent = 'Read/Write';
+        } else if (permValue === 'R') {
+            this.permissionsStatusEl.classList.add('permissions-r');
+            statusText.textContent = 'Read-Only';
+        } else {
+            this.permissionsStatusEl.classList.add('permissions-r');
+            statusText.textContent = 'None';
+        }
+    }
+}

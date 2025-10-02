@@ -96,10 +96,16 @@ class BrowserConsumer(AsyncWebsocketConsumer):
         if event.get('origin_channel') == self.channel_name:
             return
         
+
+
         await self.send(text_data=orjson.dumps({
             "type": "message_element",
             "element_id": event["element_id"],
-            "message": event["message"]
+            "message": event["message"],
+            "auth": {
+                "user_id": event.get("auth", {}).get("user_id", "coming from Device"),
+                "username": event.get("auth", {}).get("username", "coming from Device")
+            }
         }).decode("utf-8"))
 
     async def permissions_updates(self, event):
@@ -208,8 +214,11 @@ class BrowserConsumer(AsyncWebsocketConsumer):
                 "element_id": element_id,
                 "message": data["message"],
                 "origin_channel": self.channel_name,
-                "user_id": self.user.id,
-                "user": self.user.username
+                "auth": {
+                    "user_id": self.user.id,
+                    "username": self.user.username
+                }
+
             }
         )
 
@@ -234,8 +243,12 @@ class BrowserConsumer(AsyncWebsocketConsumer):
         for point in list(cached_queue):
             await self.send(text_data=orjson.dumps({
                 "type": "message_element",
-                "message": point,
-                "element_id": element_id
+                "message": point["message"],
+                "element_id": element_id,
+                "auth": {
+                    "user_id": point["auth"].get("user_id", "coming from Device"),
+                    "username": point["auth"].get("username", "coming from Device")
+                }   
             }).decode("utf-8"))
 
     async def _send_error_response(self, error_code, description, **kwargs):

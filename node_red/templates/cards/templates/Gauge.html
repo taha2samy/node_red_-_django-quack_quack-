@@ -1,29 +1,58 @@
 {% load filters %}
-{% with elment_new_id=x|append_uuid %}
+{% with new_element_id=element.id|append_uuid %}
 
 <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            {{ element.details.title|default:"title" }}
-            <span class="status-{{ elment_new_id }}" id="{{ elment_new_id }}-status"></span>
-        </div>
-        <div class="card-body">
-            <div class="gauge-container">
-                <canvas id="{{ elment_new_id }}" width="200" height="200" style="width: 200px; height: 200px;"></canvas>
-            </div>
-            <p class="text-center mt-3">Current Value: <span id="{{ elment_new_id }}-value">0</span> {{ element.details.unit|default:"Count" }}</p>
+    <div class="card-header">
+        <span>{{ element.details.title|default:"Gauge Title" }}</span>
+        
+        <div class="status-indicator-group"> 
+            <span class="status-indicator" id="{{ new_element_id }}-connection-status" title="Device Connection Status">
+                <i class="fas fa-plug"></i>
+                <span class="status-text">Offline</span>
+            </span>
+            <span class="status-indicator" id="{{ new_element_id }}-subscription-status" title="Data Subscription Status">
+                <i class="far fa-bell-slash"></i>
+                <span class="status-text">Unsubscribed</span>
+            </span>
+            <span class="status-indicator" id="{{ new_element_id }}-permissions-status" title="Your Permissions">
+                <i class="fas fa-key"></i>
+                <span class="status-text">None</span>
+            </span>
         </div>
     </div>
+    <div class="card-body">
+        <div class="gauge-container d-flex justify-content-center">
+            <canvas id="{{ new_element_id }}"></canvas>
+        </div>
+        <p class="text-center mt-3">
+            Current Value: <span id="{{ new_element_id }}-value">0</span> {{ element.details.units|default:"Value" }}
+        </p>
+    </div>
+</div>
 
-    <script>
-        (function() {
-            if (typeof window.all_elements === 'undefined') {
-            window.all_elements = {};
-            }
-            if (!window.all_elements["{{element.id}}"]) {
-            window.all_elements["{{element.id}}"] = [];
-            }
-            window.all_elements["{{element.id}}"].push(new SensorGauge("{{ elment_new_id }}", {{ element.details|default:"{}"|safe }}));
-        })();
-    </script>
-``
-    {% endwith %}
+<script>
+    (function() {
+        if (typeof window.Elements === 'undefined') {
+            window.Elements = {};
+        }
+        if (!window.Elements["{{ element.id }}"]) {
+            window.Elements["{{ element.id }}"] = [];
+        }
+
+        const detailsDataElement = document.getElementById("{{ new_element_id|add:'-details-data' }}");
+        let detailsObject = {};
+        
+        if (detailsDataElement) {
+            detailsObject = JSON.parse(detailsDataElement.textContent);
+        }
+
+        const newGaugeInstance = new SensorGauge(
+            "{{ new_element_id }}",
+            detailsObject
+        );
+        window.Elements["{{ element.id }}"].push(newGaugeInstance);
+    })();
+</script>
+
+
+{% endwith %}

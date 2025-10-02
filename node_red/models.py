@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, ec
-
+import os
 import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
@@ -67,6 +67,12 @@ class Element(models.Model):
 
     def __str__(self) -> str:
         return f"{self.element_id}: {self.name}"
+    
+class ElementDetailsStyle(models.Model):
+    element = models.ForeignKey(Element, on_delete=models.CASCADE, related_name='style_details')
+    name = models.CharField(max_length=100)
+    details = models.JSONField(null=True, blank=True)
+
 
 class PermissionManager(models.Manager):
     """Custom manager for handling permission logic for users and groups."""

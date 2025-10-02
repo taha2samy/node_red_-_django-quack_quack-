@@ -1,81 +1,117 @@
+/* ===================================================================
+ *  1. General Styles & Base Card Design
+ * =================================================================== */
+
 body {
     background-color: #f8f9fa;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
+
 .card {
-    margin-bottom: 20px;
-    border: none;
+    background-color: #fff;
+    border: 1px solid #e1e8ed;
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
-    width: 100%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
+
 .card-header {
-    font-weight: bold;
-    background-color: #ffffff;
-    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e1e8ed;
+    padding: 1rem 1.25rem;
 }
-.sensor-value {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #007bff;
+
+.card-body {
+    padding: 1.25rem;
 }
-.status-indicator {
-    width: 10px;
-    height: 10px;
+
+/* ===================================================================
+ *  2. Reusable "Status Indicator Group" Component
+ * =================================================================== */
+
+.status-indicator-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-indicator-group .status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
     border-radius: 50%;
-    display: inline-block;
-    margin-right: 5px;
-}
-.status-active {
-    background-color: #28a745;
-}
-.status-inactive {
-    background-color: #dc3545;
-}
-.gauge-container {
-    text-align: center;
-}
-.gauge-container canvas {
-    width: 200px;
-    height: 200px;
-}
-
-
-
-.chart-container {
-    text-align: center;
-}
-.chart-container canvas {
-    width: 100%;
-    max-width: 500px;
-    height: auto;
-}
-.text-center {
-    font-size: 1.1rem;
-    margin-top: 10px;
-}
-.form-switch .form-check-input {
-    width: 3em; /* حجم الزر */
-    height: 1.5em;
-    margin-left: 0;
+    border: 1px solid #dee2e6;
+    background-color: #f1f3f5;
+    color: #6c757d;
+    transition: all 0.2s ease;
     cursor: pointer;
-}
-.form-switch .form-check-label {
-    margin-left: 10px;
-    cursor: pointer;
-}
-.form-range {
-    width: 100%;
-    cursor: pointer;
+    position: relative;
 }
 
-.form-label {
-    margin-top: 10px;
-    display: block;
-    text-align: center;
-    font-size: 1.1rem;
+.status-indicator-group .status-indicator .status-text {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #2c3e50;
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+    z-index: 10;
+}
+
+.status-indicator-group .status-indicator .status-text::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #2c3e50 transparent transparent transparent;
+}
+
+.status-indicator-group .status-indicator:hover .status-text {
+    opacity: 1;
+    visibility: visible;
+}
+
+.status-indicator-group .status-indicator.status-active { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+.status-indicator-group .status-indicator.status-inactive { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+.status-indicator-group .status-indicator.subscribed { background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+.status-indicator-group .status-indicator.permissions-rc { background-color: #cce5ff; border-color: #b8daff; color: #004085; }
+.status-indicator-group .status-indicator.permissions-r { background-color: #fff3cd; border-color: #ffeeba; color: #856404; }
+
+
+/* ===================================================================
+ *  3. Responsive Adjustments
+ * =================================================================== */
+
+@media (max-width: 480px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px; 
+    }
 }

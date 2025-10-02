@@ -1,75 +1,107 @@
 class SwitchButton {
-    constructor(elementId,details,real_element_id) {
+    constructor(domId, elementId, details) {
+        this.domId = domId;
         this.elementId = elementId;
-        this.real_element_id=real_element_id
-        this.details=details
-        // Get the toggle button element
-        this.statusElement = document.getElementById(this.elementId + '-status');
-        this.valueElement = document.getElementById(this.elementId+"-input")
-        this.labelElement = document.getElementById(this.elementId+"-label")
-        this._permissions="RC"
-        // Initialize the switch button with 'off' state
-        this.valueElement.addEventListener("change", this.action.bind(this))
+        this.details = {
+            title: "Switch",
+            text_on: "ON",
+            text_off: "OFF",
+            ...details
+        };
+        this._permissions = null;
 
+        this.inputElement = document.getElementById(`${this.domId}-input`);
+        this.labelElement = document.getElementById(`${this.domId}-label`);
+        this.connectionStatusEl = document.getElementById(`${this.domId}-connection-status`);
+        this.subscriptionStatusEl = document.getElementById(`${this.domId}-subscription-status`);
+        this.permissionsStatusEl = document.getElementById(`${this.domId}-permissions-status`);
 
+        if (this.inputElement) {
+            this.inputElement.addEventListener('change', this.action.bind(this));
+        }
+
+        this.setValue(0);
+        this.setStatus('disconnected');
+        this.setSubscriptionStatus(false);
+        this.setPermissions(null);
     }
-    action(event)
-    {
-        if (socket.readyState !== WebSocket.OPEN) {
-            console.error('WebSocket is not open. ReadyState: ' + socket.readyState);
+
+    action() {
+        if (!window.websocketController) {
+            console.error("WebSocket Controller is not available.");
             return;
         }
-        const message = JSON.stringify({
+        window.websocketController.sendMessage({
             type: 'message_element',
-            element_id: this.real_element_id,
-            message: { value: this.valueElement.checked ? 1 : 0 }
+            element_id: this.elementId,
+            message: { value: this.inputElement.checked ? 1 : 0 }
         });
-        socket.send(message);
-
-        socket.onerror = function(error) {
-            console.error('WebSocket error observed:', error);
-        };
     }
-    
-
-
-
-    setStatus(status) {
-        // Change status indicator class based on state
-        if (status === 'connected' || status == "1") {
-            this.statusElement.className = 'status-indicator status-active';
-        } else if (status === 'disconnected' || status == "0") {
-            this.statusElement.className = 'status-indicator status-inactive';
-        } else {
-            this.statusElement.className = 'status-indicator';
-        }    }
 
     setValue(value) {
-        // Update the value displayed in the card
-        this.valueElement.value = (value == 'on' )? 'On' : 'Off';
-        this.valueElement.checked=(value == 1 )? true : false
-        this.labelElement.innerHTML = (value == 1) ? (this.details.text_on || "On") : (this.details.text_off || "Off");
+        if (!this.inputElement || !this.labelElement) return;
+        
+        const isChecked = value === 1 || value === true || String(value).toLowerCase() === 'on';
+        
+        this.inputElement.checked = isChecked;
+        this.labelElement.textContent = isChecked ? this.details.text_on : this.details.text_off;
     }
+
+    setStatus(status) {
+        if (!this.connectionStatusEl) return;
+        const statusText = this.connectionStatusEl.querySelector('.status-text');
+        this.connectionStatusEl.classList.remove('status-active', 'status-inactive');
+
+        if (status === 'connected') {
+            this.connectionStatusEl.classList.add('status-active');
+            statusText.textContent = "Online";
+        } else {
+            this.connectionStatusEl.classList.add('status-inactive');
+            statusText.textContent = "Offline";
+        }
+    }
+
+    setSubscriptionStatus(isSubscribed) {
+        if (!this.subscriptionStatusEl) return;
+        const icon = this.subscriptionStatusEl.querySelector('i');
+        const statusText = this.subscriptionStatusEl.querySelector('.status-text');
+        
+        this.subscriptionStatusEl.classList.toggle('subscribed', isSubscribed);
+        icon.className = isSubscribed ? 'fas fa-bell' : 'far fa-bell-slash';
+        statusText.textContent = isSubscribed ? 'Subscribed' : 'Unsubscribed';
+
+        if (!isSubscribed) {
+            this.setPermissions(null);
+        }
+    }
+
     get permissions() {
         return this._permissions;
     }
-
-    // Setter for permissions
+    
     set permissions(value) {
         this._permissions = value;
-        if (this._permissions === "RC")
-            {
-                this.valueElement.disabled = false
+        this.setPermissions(value);
+    }
+    
+    setPermissions(permValue) {
+        if (this.permissionsStatusEl) {
+            const statusText = this.permissionsStatusEl.querySelector('.status-text');
+            this.permissionsStatusEl.classList.remove('permissions-rc', 'permissions-r');
 
-
-            }else{
-
-                this.valueElement.disabled = true
-
+            if (permValue === 'RC') {
+                this.permissionsStatusEl.classList.add('permissions-rc');
+                statusText.textContent = 'Read/Write';
+            } else if (permValue === 'R') {
+                this.permissionsStatusEl.classList.add('permissions-r');
+                statusText.textContent = 'Read-Only';
+            } else {
+                statusText.textContent = 'None';
             }
-        
-        
+        }
 
-        // Perform additional logic here if needed
+        if (this.inputElement) {
+            this.inputElement.disabled = (permValue !== 'RC');
+        }
     }
 }
