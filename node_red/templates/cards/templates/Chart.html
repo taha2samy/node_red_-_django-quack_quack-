@@ -29,8 +29,12 @@
             <span class="unit">{{ element.details.unit|default:"" }}</span>
         </p>
     </div>
+<p>
+    </p>
 </div>
-
+{% with new_id=new_element_id|add:"-details-data" %}
+    {{ element.details|json_script:new_id }}
+{% endwith %}
 
 <script>
     (function() {

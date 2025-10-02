@@ -1,33 +1,58 @@
 {% load filters %}
-{% with elment_new_id=x|append_uuid %}
-
+{% with new_element_id=element.id|append_uuid %}
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        {{ element.details.title|default:"title" }}
-        <span class="status-indicator" id="{{ elment_new_id }}-status"></span>
+    <div class="card-header">
+        <span>{{ element.details.title|default:"Slider Control" }}</span>
+        <div class="status-indicator-group">
+            <span class="status-indicator" id="{{ new_element_id }}-connection-status" title="Device Connection Status">
+                <i class="fas fa-plug"></i>
+                <span class="status-text">...</span>
+            </span>
+            <span class="status-indicator" id="{{ new_element_id }}-subscription-status" title="Data Subscription Status">
+                <i class="far fa-bell-slash"></i>
+                <span class="status-text">Unsubscribed</span>
+            </span>
+            <span class="status-indicator" id="{{ new_element_id }}-permissions-status" title="Your Permissions">
+                <i class="fas fa-key"></i>
+                <span class="status-text">None</span>
+            </span>
+        </div>
     </div>
-
     <div class="card-body">
-        <p class="card-text">{{element.details.description|default:"description"}}</p>
-        
-        <!-- Slider Input -->
-        <div class="form-group">
-            <input type="range" class="form-range" id="{{elment_new_id}}-input" min="{{details.min|default:0}}" max="{{details.max|default:100}}" step="1{{details.step|default:1}}">
-            <label class="form-label" id="{{elment_new_id}}-label" for="{{elment_new_id}}-input"></label>
+        <p class="card-text">{{element.details.description|default:"Adjust the value using the slider."}}</p>
+        <div class="form-group mt-3">
+            <input type="range" class="form-range" id="{{ new_element_id }}-input" min="{{element.details.min|default:0}}" max="{{element.details.max|default:100}}" step="{{element.details.step|default:1}}">
+            <label class="form-label" id="{{ new_element_id }}-label" for="{{ new_element_id }}-input"></label>
         </div>
     </div>
 </div>
 
+{% with details_id=new_element_id|add:"-details-data" %}
+    {{ element.details|json_script:details_id }}
+{% endwith %}
+
 <script>
     (function() {
-        if (typeof window.all_elements === 'undefined') {
-            window.all_elements = {};
+        if (typeof window.Elements === 'undefined') {
+            window.Elements = {};
         }
-        if (!window.all_elements["{{element.id}}"]) {
-            window.all_elements["{{element.id}}"] = [];
+        if (!window.Elements["{{ element.id }}"]) {
+            window.Elements["{{ element.id }}"] = [];
         }
-        window.all_elements["{{element.id}}"].push(new SliderButton(elementId="{{ elment_new_id }}", details={{element.details|default:"{}"|safe}},"{{element.id}}"));
+
+        const detailsDataElement = document.getElementById("{{ new_element_id|add:'-details-data' }}");
+        let detailsObject = {};
+        
+        if (detailsDataElement) {
+            detailsObject = JSON.parse(detailsDataElement.textContent);
+        }
+
+        const sliderInstance = new SliderButton(
+            "{{ new_element_id }}",
+            "{{ element.id }}",
+            detailsObject
+        );
+        window.Elements["{{ element.id }}"].push(sliderInstance);
     })();
 </script>
-
 {% endwith %}

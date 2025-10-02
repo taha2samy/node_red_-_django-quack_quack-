@@ -29,7 +29,9 @@
         </p>
     </div>
 </div>
-
+{% with new_id=new_element_id|add:"-details-data" %}
+    {{ element.details|json_script:new_id }}
+{% endwith %}
 <script>
     (function() {
         if (typeof window.Elements === 'undefined') {

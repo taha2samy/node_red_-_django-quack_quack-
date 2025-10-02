@@ -103,7 +103,88 @@ body {
 .status-indicator-group .status-indicator.permissions-rc { background-color: #cce5ff; border-color: #b8daff; color: #004085; }
 .status-indicator-group .status-indicator.permissions-r { background-color: #fff3cd; border-color: #ffeeba; color: #856404; }
 
+/* ===================================================================
+ *  4. Component-Specific Styles: Slider
+ * =================================================================== */
 
+.card-text {
+    color: #6c757d;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.form-label {
+    margin-top: 10px;
+    display: block;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #007bff;
+}
+
+.form-range {
+    width: 100%;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
+
+.form-range::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+}
+
+.form-range::-moz-range-track {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+}
+
+.form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    margin-top: -6px;
+    transition: transform 0.2s ease;
+}
+
+.form-range:active::-webkit-slider-thumb {
+    transform: scale(1.15);
+}
+
+.form-range::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.form-range:disabled {
+    cursor: not-allowed;
+}
+
+.form-range:disabled::-webkit-slider-thumb {
+    background: #adb5bd;
+}
+
+.form-range:disabled::-moz-range-thumb {
+    background: #adb5bd;
+}
+
+.form-range:disabled + .form-label {
+    color: #adb5bd;
+}
 /* ===================================================================
  *  3. Responsive Adjustments
  * =================================================================== */

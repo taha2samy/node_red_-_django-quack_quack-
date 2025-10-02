@@ -28,13 +28,21 @@
     </div>
 </div>
 
-{{ element.details|json_script:new_element_id|add:"-details-data" }}
 
+
+{% with new_id=new_element_id|add:"-details-data" %}
+    {{ element.details|json_script:new_id }}
+{% endwith %}
+    
 <script>
     (function() {
-        if (typeof window.Elements === 'undefined') window.Elements = {};
-        if (!window.Elements["{{ element.id }}"]) window.Elements["{{ element.id }}"] = [];
-        
+        if (typeof window.Elements === 'undefined') {
+            window.Elements = {};
+        }
+        if (!window.Elements["{{ element.id }}"]) {
+            window.Elements["{{ element.id }}"] = [];
+        }
+
         const detailsDataElement = document.getElementById("{{ new_element_id|add:'-details-data' }}");
         let detailsObject = {};
         
@@ -42,12 +50,12 @@
             detailsObject = JSON.parse(detailsDataElement.textContent);
         }
 
-        const newSwitchInstance = new SwitchButton(
+        const switchButton = new SwitchButton(
             "{{ new_element_id }}",
             "{{ element.id }}",
             detailsObject
         );
-        window.Elements["{{ element.id }}"].push(newSwitchInstance);
+        window.Elements["{{ element.id }}"].push(switchButton);
     })();
 </script>
 

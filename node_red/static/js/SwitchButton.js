@@ -2,12 +2,14 @@ class SwitchButton {
     constructor(domId, elementId, details) {
         this.domId = domId;
         this.elementId = elementId;
+        console.log(this.details);
         this.details = {
             title: "Switch",
             text_on: "ON",
             text_off: "OFF",
             ...details
         };
+        console.log(this.details);
         this._permissions = null;
 
         this.inputElement = document.getElementById(`${this.domId}-input`);

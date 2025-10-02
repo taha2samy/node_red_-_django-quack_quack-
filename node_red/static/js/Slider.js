@@ -1,62 +1,129 @@
 class SliderButton {
-    constructor(elementId, details, real_element_id) {
+    constructor(domId, elementId, details) {
+        this.domId = domId;
         this.elementId = elementId;
-        this.real_element_id = real_element_id;
-        this.details=details
-        // Get the slider element
-        this.sliderElement = document.getElementById(this.elementId + '-input');
-        this.statusElement = document.getElementById(this.elementId + '-status');
-        this.labelElement = document.getElementById(this.elementId + '-label');
-        this._permissions = "RC";
+        
+        // Set default values for slider-specific details
+        this.details = {
+            title: "Slider Control",
+            description: "Adjust the value.",
+            min: 0,
+            max: 100,
+            step: 1,
+            unit: "",
+            ...details
+        };
 
-        // Initialize the slider value
-        this.sliderElement.addEventListener("input", this.action.bind(this));
+        this._permissions = null;
+
+        // Get all DOM elements using the same naming convention
+        this.inputElement = document.getElementById(`${this.domId}-input`);
+        this.labelElement = document.getElementById(`${this.domId}-label`);
+        this.connectionStatusEl = document.getElementById(`${this.domId}-connection-status`);
+        this.subscriptionStatusEl = document.getElementById(`${this.domId}-subscription-status`);
+        this.permissionsStatusEl = document.getElementById(`${this.domId}-permissions-status`);
+
+        if (this.inputElement) {
+            // A slider uses 'input' for real-time feedback, unlike a switch's 'change'
+            this.inputElement.addEventListener('input', this.action.bind(this));
+        }
+
+        // Initialize the component in a default state
+        this.setValue(this.details.min); // Default to the minimum value
+        this.setStatus('disconnected');
+        this.setSubscriptionStatus(false);
+        this.setPermissions(null);
     }
 
-    action(event) {
-        if (socket.readyState !== WebSocket.OPEN) {
-            console.error('WebSocket is not open. ReadyState: ' + socket.readyState);
+    /**
+     * This is the function that differs in implementation but not in name.
+     * It sends the current value of the slider.
+     */
+    action() {
+        if (!window.websocketController) {
+            console.error("WebSocket Controller is not available.");
             return;
         }
-        const message = JSON.stringify({
+        window.websocketController.sendMessage({
             type: 'message_element',
-            element_id: this.real_element_id,
-            message: { value: this.sliderElement.value }
+            element_id: this.elementId,
+            message: { value: parseFloat(this.inputElement.value) } // Send the numerical value
         });
-        socket.send(message);
-
-        socket.onerror = function(error) {
-            console.error('WebSocket error observed:', error);
-        };
     }
 
+    /**
+     * This function's implementation is specific to the slider.
+     * It sets the slider's value and updates the label.
+     */
+    setValue(value) {
+        if (!this.inputElement || !this.labelElement) return;
+        
+        const numericValue = parseFloat(value);
+        
+        this.inputElement.value = numericValue;
+        this.labelElement.textContent = `${numericValue}${this.details.unit || ""}`;
+    }
+
+    // ===================================================================
+    //  THE FOLLOWING METHODS ARE IDENTICAL TO SwitchButton
+    //  (This is the unified API you wanted)
+    // ===================================================================
+
     setStatus(status) {
-        // Change status indicator class based on state
-        if (status === 'connected' || status == "1") {
-            this.statusElement.className = 'status-indicator status-active';
-        } else if (status === 'disconnected' || status == "0") {
-            this.statusElement.className = 'status-indicator status-inactive';
+        if (!this.connectionStatusEl) return;
+        const statusText = this.connectionStatusEl.querySelector('.status-text');
+        this.connectionStatusEl.classList.remove('status-active', 'status-inactive');
+
+        if (status === 'connected') {
+            this.connectionStatusEl.classList.add('status-active');
+            statusText.textContent = "Online";
         } else {
-            this.statusElement.className = 'status-indicator';
+            this.connectionStatusEl.classList.add('status-inactive');
+            statusText.textContent = "Offline";
         }
     }
 
-    setValue(value) {
-        // Update the slider value
-        this.sliderElement.value = value;
-        this.labelElement.innerText=value+(this.details.unit||"")
-    }
+    setSubscriptionStatus(isSubscribed) {
+        if (!this.subscriptionStatusEl) return;
+        const icon = this.subscriptionStatusEl.querySelector('i');
+        const statusText = this.subscriptionStatusEl.querySelector('.status-text');
+        
+        this.subscriptionStatusEl.classList.toggle('subscribed', isSubscribed);
+        icon.className = isSubscribed ? 'fas fa-bell' : 'far fa-bell-slash';
+        statusText.textContent = isSubscribed ? 'Subscribed' : 'Unsubscribed';
 
+        if (!isSubscribed) {
+            this.setPermissions(null);
+        }
+    }
+    
     get permissions() {
         return this._permissions;
     }
-
+    
     set permissions(value) {
         this._permissions = value;
-        if (this._permissions === "RC") {
-            this.sliderElement.disabled = false;
-        } else {
-            this.sliderElement.disabled = true;
+        this.setPermissions(value); // Call the internal method to update UI
+    }
+    
+    setPermissions(permValue) {
+        if (this.permissionsStatusEl) {
+            const statusText = this.permissionsStatusEl.querySelector('.status-text');
+            this.permissionsStatusEl.classList.remove('permissions-rc', 'permissions-r');
+
+            if (permValue === 'RC') {
+                this.permissionsStatusEl.classList.add('permissions-rc');
+                statusText.textContent = 'Read/Write';
+            } else if (permValue === 'R') {
+                this.permissionsStatusEl.classList.add('permissions-r');
+                statusText.textContent = 'Read-Only';
+            } else {
+                statusText.textContent = 'None';
+            }
+        }
+
+        if (this.inputElement) {
+            this.inputElement.disabled = (permValue !== 'RC');
         }
     }
 }
