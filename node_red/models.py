@@ -6,7 +6,6 @@ from django.conf import settings
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, ec
 import os
-import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
 import uuid

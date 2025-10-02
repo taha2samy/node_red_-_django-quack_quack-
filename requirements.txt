@@ -11,8 +11,6 @@ daphne==4.2.1
 Django==5.2.6
 django-appconf==1.1.0
 django-redis==6.0.0
-djangorestframework==3.16.1
-djangorestframework_simplejwt==5.5.1
 dnspython==2.8.0
 hyperlink==21.0.0
 idna==3.10
