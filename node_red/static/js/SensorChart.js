@@ -85,8 +85,6 @@ class SensorChart {
     }
 
     setValue(message) {
-        console.log(message);
-        console.log(222222222222222222222222222222);
         this.addPoint(message);
     }
 
