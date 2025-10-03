@@ -38,7 +38,8 @@ The backend is built on the robust Django framework, supercharged with Django Ch
 
 *   ⚡️ **Real-Time Communication:** Bidirectional data flow using WebSockets for instant UI updates.
 *   🛡️ **Secure Device Authentication:** JWT-based authentication ensures that only authorized devices can connect.
-*   🔐 **Granular Permissions:** Attribute-Based Access Control (ABAC) for users and groups at the individual element level.
+*   🔐 **Granular Permissions:** A powerful access control system implementing Role-Based Access Control (RBAC) via Django Groups, with support for direct user-specific permissions.
+.
 *   🏗️ **Scalable Architecture:** A decoupled, event-driven architecture powered by Redis as a message broker.
 *   📊 **Dynamic Frontend:** A component-based frontend built with Vanilla JS, allowing for easy extension.
 *   🐳 **Dockerized:** Comes with a Docker setup for easy development and deployment.
