@@ -27,7 +27,6 @@
         socket.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
-                console.log("Received data from server:", data);
 
                 const elementId = data.element_id;
                 const componentInstances = window.Elements[elementId];
@@ -88,6 +87,17 @@
                 break;
 
             case 'message_element':
+                if(typeof instance.setLastEditAt === 'function' && data.last_edit_at) {
+                    if (data.hasOwnProperty('last_edit_at')) {
+                        instance.setLastEditAt(new Date(data.last_edit_at).toLocaleString());
+                    }   
+                }
+                if(typeof instance.setLastEditBy === 'function' && data.last_edit_at) {
+                   
+                    if (data.hasOwnProperty('auth')) {
+                        instance.setLastEditBy(data.auth.username || 'Unknown');
+                    }
+                }
                 if (typeof instance.setValue !== 'function' || !data.message) break;
 
                 // Handles simple format for Gauges/Switches: { "value": ... }
@@ -99,6 +109,7 @@
                     instance.setValue(data.message);
                 }
                 break;
+                
             
             case 'message_element_history':
                 if (data.messages && typeof instance.loadHistory === 'function') {

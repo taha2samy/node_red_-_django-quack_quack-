@@ -2,14 +2,12 @@ class SwitchButton {
     constructor(domId, elementId, details) {
         this.domId = domId;
         this.elementId = elementId;
-        console.log(this.details);
         this.details = {
             title: "Switch",
             text_on: "ON",
             text_off: "OFF",
             ...details
         };
-        console.log(this.details);
         this._permissions = null;
 
         this.inputElement = document.getElementById(`${this.domId}-input`);
@@ -17,6 +15,8 @@ class SwitchButton {
         this.connectionStatusEl = document.getElementById(`${this.domId}-connection-status`);
         this.subscriptionStatusEl = document.getElementById(`${this.domId}-subscription-status`);
         this.permissionsStatusEl = document.getElementById(`${this.domId}-permissions-status`);
+        this.lastEditAtEl = document.getElementById(`${this.domId}-last-edit-at`);
+        this.lastEditByEl = document.getElementById(`${this.domId}-last-edit-by`);
 
         if (this.inputElement) {
             this.inputElement.addEventListener('change', this.action.bind(this));
@@ -39,7 +39,51 @@ class SwitchButton {
             message: { value: this.inputElement.checked ? 1 : 0 }
         });
     }
+    setLastEditAt(date) {
+        if (!this.lastEditAtEl) return;
 
+        this.lastEditAtEl.querySelector('.status-text').textContent = date || 'None';
+
+        const { iconColor, backgroundColor } = this.getRandomCoordinatedColors();
+
+        const iconEl = this.lastEditAtEl.querySelector('.fas.fa-clock');
+
+        if (iconEl) {
+            iconEl.style.color = iconColor;
+        }
+
+        this.lastEditAtEl.style.backgroundColor = backgroundColor;
+        this.lastEditAtEl.style.padding = '2px 8px';
+        this.lastEditAtEl.style.borderRadius = '12px';
+        this.lastEditAtEl.style.transition = 'background-color 0.3s ease'
+
+    }
+
+    getRandomCoordinatedColors() {
+        const hue = Math.floor(Math.random() * 360);
+        const iconColor = `hsl(${hue}, 90%, 55%)`;
+        const backgroundColor = `hsl(${hue}, 100%, 95%)`;
+        return { iconColor, backgroundColor };
+    }
+
+    setLastEditBy(user) {
+        if (!this.lastEditByEl) return;
+        if (this.lastEditByEl.querySelector('.status-text').textContent === user) return;
+        this.lastEditByEl.querySelector('.status-text').textContent = user || 'None';
+
+        const { iconColor, backgroundColor } = this.getRandomCoordinatedColors();
+
+        const iconEl = this.lastEditByEl.querySelector('.fas.fa-pencil-alt');
+
+        if (iconEl) {
+            iconEl.style.color = iconColor;
+        }
+
+        this.lastEditByEl.style.backgroundColor = backgroundColor;
+        this.lastEditByEl.style.padding = '2px 8px';
+        this.lastEditByEl.style.borderRadius = '12px';
+        this.lastEditAtEl.style.transition = 'background-color 0.3s ease'
+    }
     setValue(value) {
         if (!this.inputElement || !this.labelElement) return;
         

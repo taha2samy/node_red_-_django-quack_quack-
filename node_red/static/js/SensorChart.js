@@ -42,6 +42,8 @@ class SensorChart {
         this.subscriptionStatusEl = document.getElementById(`${this.canvasId}-subscription-status`);
         this.permissionsStatusEl = document.getElementById(`${this.canvasId}-permissions-status`);
         this.valueEl = document.getElementById(`${this.canvasId}-value`);
+        this.lastEditAtEl = document.getElementById(`${this.canvasId}-last-edit-at`);
+        this.lastEditByEl = document.getElementById(`${this.canvasId}-last-edit-by`);
 
         const chartConfig = {
             type: this.details.chartType,
@@ -83,7 +85,51 @@ class SensorChart {
 
         this.chart.update('none');
     }
+    setLastEditAt(date) {
+        if (!this.lastEditAtEl) return;
 
+        this.lastEditAtEl.querySelector('.status-text').textContent = date || 'None';
+
+        const { iconColor, backgroundColor } = this.getRandomCoordinatedColors();
+
+        const iconEl = this.lastEditAtEl.querySelector('.fas.fa-clock');
+
+        if (iconEl) {
+            iconEl.style.color = iconColor;
+        }
+
+        this.lastEditAtEl.style.backgroundColor = backgroundColor;
+        this.lastEditAtEl.style.padding = '2px 8px';
+        this.lastEditAtEl.style.borderRadius = '12px';
+        this.lastEditAtEl.style.transition = 'background-color 0.3s ease'
+
+    }
+
+    getRandomCoordinatedColors() {
+        const hue = Math.floor(Math.random() * 360);
+        const iconColor = `hsl(${hue}, 90%, 55%)`;
+        const backgroundColor = `hsl(${hue}, 100%, 95%)`;
+        return { iconColor, backgroundColor };
+    }
+
+    setLastEditBy(user) {
+        if (!this.lastEditByEl) return;
+        if (this.lastEditByEl.querySelector('.status-text').textContent === user) return;
+        this.lastEditByEl.querySelector('.status-text').textContent = user || 'None';
+
+        const { iconColor, backgroundColor } = this.getRandomCoordinatedColors();
+
+        const iconEl = this.lastEditByEl.querySelector('.fas.fa-pencil-alt');
+
+        if (iconEl) {
+            iconEl.style.color = iconColor;
+        }
+
+        this.lastEditByEl.style.backgroundColor = backgroundColor;
+        this.lastEditByEl.style.padding = '2px 8px';
+        this.lastEditByEl.style.borderRadius = '12px';
+        this.lastEditAtEl.style.transition = 'background-color 0.3s ease'
+    }
     setValue(message) {
         this.addPoint(message);
     }

@@ -1,7 +1,7 @@
 import logging
 import traceback
 from collections import deque
-
+import time
 import orjson
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -105,7 +105,8 @@ class BrowserConsumer(AsyncWebsocketConsumer):
             "auth": {
                 "user_id": event.get("auth", {}).get("user_id", "coming from Device"),
                 "username": event.get("auth", {}).get("username", "coming from Device")
-            }
+            },
+            "last_edit_at": event.get("last_edit_at", "None")
         }).decode("utf-8"))
 
     async def permissions_updates(self, event):
@@ -248,7 +249,8 @@ class BrowserConsumer(AsyncWebsocketConsumer):
                 "auth": {
                     "user_id": point["auth"].get("user_id", "coming from Device"),
                     "username": point["auth"].get("username", "coming from Device")
-                }   
+                },
+                "last_edit_at": point.get("last_edit_at", "None")
             }).decode("utf-8"))
 
     async def _send_error_response(self, error_code, description, **kwargs):

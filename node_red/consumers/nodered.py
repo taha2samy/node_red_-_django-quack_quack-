@@ -3,7 +3,7 @@ import logging
 import socket
 import uuid
 from collections import deque
-
+import time
 import orjson
 import psutil
 from channels.db import database_sync_to_async
@@ -63,15 +63,16 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
                     "user_id": payload.get("auth", {}).get("user_id", "coming from Device"),
                     "username": payload.get("auth", {}).get("username", "coming from Device")
                 }
+                last_edit_at = payload.get("last_edit_at",time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + f".{int((time.time()%1)*1000):03d}Z")
                 # Validate that the element_id belongs to the connected device
                 if element_id not in self.elements_ids:
                     logger.warning(
                         f"Device {self.device.get('id')} sent data for an unauthorized element: {element_id}"
                     )
                     return
-  
-                self._update_element_cache(element_id, message,auth)
-                
+
+                self._update_element_cache(element_id, message, auth, last_edit_at)
+
                 await self.channel_layer.group_send(
                     element_id,
                     {
@@ -79,10 +80,8 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
                         'element_id': element_id,
                         'message': message,
                         'origin_channel': self.channel_name,
-                        "auth": auth
-             
-                  
-                        
+                        "auth": auth,
+                        "last_edit_at": last_edit_at,
                     }
                 )
             except (orjson.JSONDecodeError, KeyError) as e:
@@ -104,7 +103,8 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
                     "auth": {
                         "user_id": event["auth"].get("user_id", "coming from Device"),
                         "username": event["auth"].get("username", "coming from Device")
-                    }
+                    },
+                    "last_edit_at": event.get("last_edit_at", time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + f".{int((time.time()%1)*1000):03d}Z")
                 }).decode('utf-8')
             )
 
@@ -189,14 +189,14 @@ class NodeRedConsumer(AsyncWebsocketConsumer):
             *(self.channel_layer.group_discard(group, self.channel_name) for group in groups_to_leave)
         )
 
-    def _update_element_cache(self, element_id, message, auth):
+    def _update_element_cache(self, element_id, message, auth, last_edit_at):
         """Updates the cache for a given element with a new message."""
         element_data = self.elements_data.get(element_id, {})
         cache_key = f"cache:{element_id}"
         # Provide a default maxlen for the deque
         max_points = element_data.get('points', 100)
         queue = cache.get(cache_key, deque(maxlen=max_points))
-        queue.append({"message": message, "auth": auth})
+        queue.append({"message": message, "auth": auth, "last_edit_at": last_edit_at})
         cache.set(cache_key, queue, timeout=None)
 
     # --------------------------------------------------------------------------
