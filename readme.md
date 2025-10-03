@@ -70,26 +70,12 @@ Get the project up and running on your local machine for development and testing
 
 ### Installation (Docker)
 
-1.  **Clone the repository:**
+  **Clone the repository:**
     ```sh
     git clone https://github.com/taha2samy/node_red_-_django-quack_quack-.git
     cd node_red_-_django-quack_quack-
     ```
 
-2.  **Configure Environment Variables:**
-    *   Navigate to the `docker/` directory.
-    *   Rename `enfile.env` to `.env`.
-    *   Fill in the required values in the `.env` file (e.g., `SECRET_KEY`).
-
-3.  **Build and Run with Docker Compose:**
-    ```sh
-    cd docker
-    docker-compose up --build
-    ```
-
-4.  **Access the Application:**
-    *   The application should now be running at `http://localhost:8000`.
-    *   The Django admin panel is available at `http://localhost:8000/admin/`.
 
 ---
 
