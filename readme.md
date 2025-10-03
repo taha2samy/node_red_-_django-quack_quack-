@@ -14,10 +14,9 @@
   <a href="#quick-start">Quick Start</a> ·
   <a href="#architecture-overview">Architecture</a>
 </p>
-
 <p align="center">
   <a href="https://codespaces.new/taha2samy/node_red_-_django-quack_quack-"><img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces"></a>
-  <a href="https://github.com/taha2samy/node_red_-_django-quack_quack-/pulls/app/dependabot"><img src="https://img.shields.io/badge/dependabot-enabled-brightgreen.svg" alt="Dependabot"></a>
+  <a href="https://github.com/taha2samy/node_red_-_django-quack_quack-/network/updates"><img src="https://img.shields.io/badge/dependabot-enabled-brightgreen.svg" alt="Dependabot"></a>
   <br>
   <img src="https://img.shields.io/badge/Python-3.12-blue.svg" alt="Python Version">
   <img src="https://img.shields.io/badge/Django-5.2-green.svg" alt="Django Version">
