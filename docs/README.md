@@ -4,25 +4,26 @@
 
 # Welcome to the Quack Quack Documentation
 
-Welcome to the official documentation for **Quack Quack**, a real-time IoT dashboard and control system. This documentation provides a comprehensive guide to understanding, setting up, using, and extending the project.
+Welcome to the official documentation for **Quack Quack**, a real-time IoT integration platform. This documentation provides a comprehensive guide to understanding, setting up, using, and extending the project's powerful backend capabilities.
 
 ---
 
 ## What is Quack Quack?
 
-Quack Quack is a full-stack platform designed to bridge the gap between physical IoT devices and a dynamic web interface. It allows you to:
-- **Monitor** real-time data from sensors through interactive dashboard widgets like gauges and charts.
-- **Control** actuators and devices remotely using elements like switches and sliders.
-- **Secure** access to your data and controls with a powerful, granular permissions system.
+Quack Quack is a **backend-focused integration platform** designed to be the robust core for real-time IoT applications. It provides the essential infrastructure to:
+- **Ingest** real-time data from IoT devices and hardware (like Node-RED) via secure WebSockets.
+- **Broadcast** this data efficiently to multiple connected clients (such as web dashboards, mobile apps, or other services).
+- **Secure** data access with a powerful, granular permissions system (RBAC).
+- **Process** commands sent from clients and forward them back to the appropriate devices.
 
-The entire system is built on a scalable, event-driven architecture using Django Channels, making it suitable for both small-scale hobbyist projects and larger, more demanding IoT applications.
+While this project includes a sample frontend for demonstration, its primary focus is on providing a scalable, event-driven backend that you can integrate with any user interface or system.
 
 ## Who is this for?
 
-This documentation is intended for several audiences:
-- **Developers:** Who want to understand the codebase, extend its functionality, or integrate it with their own systems.
-- **System Administrators:** Who are responsible for deploying, managing, and maintaining the platform.
-- **End-Users:** Who need to understand how to use the dashboard and its features.
+This documentation is primarily intended for:
+- **Backend & IoT Developers:** Who need a solid foundation to build real-time applications without reinventing the wheel.
+- **System Integrators:** Who want to connect various hardware and software components through a centralized, real-time hub.
+- **System Administrators:** Who are responsible for deploying and managing the core infrastructure of an IoT system.
 
 ## How to Navigate these Docs
 
