@@ -2,7 +2,7 @@
   <img src="docs/imgs/logo.svg" alt="Project Logo" width="150"/>
 </p>
 
-<h1 align="center">Project Sentinel (اسم مقترح)</h1>
+<h1 align="center">Quak Quak</h1>
 
 <p align="center">
   A real-time IoT dashboard and control system built with Django Channels.
