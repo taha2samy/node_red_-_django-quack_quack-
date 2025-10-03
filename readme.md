@@ -70,11 +70,11 @@ Get the project up and running on your local machine for development and testing
 
 ### Installation (Docker)
 
-  **Clone the repository:**
-    ```sh
-    git clone https://github.com/taha2samy/node_red_-_django-quack_quack-.git
-    cd node_red_-_django-quack_quack-
-    ```
+**Clone the repository:**
+```sh
+git clone https://github.com/taha2samy/node_red_-_django-quack_quack-.git
+cd node_red_-_django-quack_quack-
+```
 
 
  use builtin tasks in vscode to run dockercompose
