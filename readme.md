@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/imgs/logo.svg" alt="Project Logo" width="150"/>
+  <img src="docs/imgs/logo.svg" alt="Quack Quack Project Logo" width="150"/>
 </p>
 
-<h1 align="center">Quak Quak</h1>
+<h1 align="center">Quack Quack</h1>
 
 <p align="center">
   A real-time IoT dashboard and control system built with Django Channels.
@@ -16,19 +16,22 @@
 </p>
 
 <p align="center">
-  <!-- Badges: Replace with your actual links -->
+  <a href="https://codespaces.new/taha2samy/node_red_-_django-quack_quack-"><img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces"></a>
+  <a href="https://github.com/taha2samy/node_red_-_django-quack_quack-/pulls/app/dependabot"><img src="https://img.shields.io/badge/dependabot-enabled-brightgreen.svg" alt="Dependabot"></a>
+  <br>
   <img src="https://img.shields.io/badge/Python-3.12-blue.svg" alt="Python Version">
   <img src="https://img.shields.io/badge/Django-5.2-green.svg" alt="Django Version">
   <img src="https://img.shields.io/badge/Channels-4.3-red.svg" alt="Channels Version">
-  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
-  <img src="https://img.shields.io/github/stars/YOUR_USERNAME/YOUR_REPO?style=social" alt="GitHub Stars">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
+  <img src="https://img.shields.io/github/stars/taha2samy/node_red_-_django-quack_quack-?style=social" alt="GitHub Stars">
 </p>
+
 
 ---
 
 ## About The Project
 
-Project Sentinel is a powerful, scalable, and secure platform for monitoring and controlling IoT devices in real-time. It provides a web-based dashboard where users can visualize data from sensors (gauges, charts) and send commands to actuators (switches, sliders), all governed by a flexible role-based access control system.
+**Quack Quack** is a powerful, scalable, and secure platform for monitoring and controlling IoT devices in real-time. It provides a web-based dashboard where users can visualize data from sensors (gauges, charts) and send commands to actuators (switches, sliders), all governed by a flexible role-based access control system.
 
 The backend is built on the robust Django framework, supercharged with Django Channels for handling thousands of persistent WebSocket connections. This makes it ideal for applications requiring low-latency, bidirectional communication between devices, servers, and user interfaces.
 
@@ -69,7 +72,8 @@ Get the project up and running on your local machine for development and testing
 
 1.  **Clone the repository:**
     ```sh
-    git clone https://github.com/taha2samy/node_red_-_django-quack_quack-.git .
+    git clone https://github.com/taha2samy/node_red_-_django-quack_quack-.git
+    cd node_red_-_django-quack_quack-
     ```
 
 2.  **Configure Environment Variables:**
@@ -103,4 +107,4 @@ Here are some key sections:
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` file for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
