@@ -39,7 +39,7 @@ The backend is built on the robust Django framework, supercharged with Django Ch
 
 *   ⚡️ **Real-Time Communication:** Bidirectional data flow using WebSockets for instant UI updates.
 *   🛡️ **Secure Device Authentication:** JWT-based authentication ensures that only authorized devices can connect.
-*   🔐 **Granular Permissions:** Role-based access control (RBAC) for users and groups at the individual element level.
+*   🔐 **Granular Permissions:** Attribute-Based Access Control (ABAC) for users and groups at the individual element level.
 *   🏗️ **Scalable Architecture:** A decoupled, event-driven architecture powered by Redis as a message broker.
 *   📊 **Dynamic Frontend:** A component-based frontend built with Vanilla JS, allowing for easy extension.
 *   🐳 **Dockerized:** Comes with a Docker setup for easy development and deployment.
@@ -75,6 +75,7 @@ Get the project up and running on your local machine for development and testing
     git clone https://github.com/taha2samy/node_red_-_django-quack_quack-.git
     cd node_red_-_django-quack_quack-
     ```
+    use buildin tasks to run dockercompose
 
 
 ---
