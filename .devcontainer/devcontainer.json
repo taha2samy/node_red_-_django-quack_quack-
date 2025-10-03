@@ -1,5 +1,5 @@
 {
-    "name": "WebSocketAgent Dev Container",
+    "name": "Quack Quack Dev Container",
     "build": {
         "dockerfile": "Dockerfile",
         "context": ".."
