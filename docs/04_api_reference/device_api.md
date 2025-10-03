@@ -54,6 +54,9 @@ Sends a data point from one of the device's elements to the server. The server w
   "message": {
     "value": 22.7
   },
+  "auth":{
+    "user_id":"id",
+    "username":"username"},
   "last_edit_at": "2024-05-21T11:00:05.456Z"
 }
 ```

@@ -63,7 +63,7 @@ class Element(models.Model):
        
 
     def __str__(self) -> str:
-        return f"{self.element_id}: {self.name}"
+        return f"{self.id}: {self.name}"
     
 class ElementDetailsStyle(models.Model):
     element = models.ForeignKey(Element, on_delete=models.CASCADE, related_name='style_details')
