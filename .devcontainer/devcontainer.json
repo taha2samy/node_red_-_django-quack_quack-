@@ -1,0 +1,36 @@
+{
+    "name": "WebSocketAgent Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+            "zsh": {
+                "path": "/bin/zsh"
+            }
+        },
+        "terminal.integrated.fontFamily": "MesloLGPS NF",
+        "workbench.iconTheme": "material-icon-theme",
+        "explorer.compactFolders": false
+    },
+    "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+        "ZainChen.json",
+        "ms-vscode-remote.remote-containers",
+        "ms-azuretools.vscode-docker",
+        "docker.docker",
+        "PKief.material-icon-theme",
+        "ms-python.python",
+        "actboy168.tasks",
+        "augustocdias.tasks-shell-input",
+
+    ],
+    "remoteUser": "root"
+}

@@ -1,0 +1,149 @@
+name: Quack CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to build and push (e.g., v1.0.0)'
+        required: true
+        default: 'latest'
+        type: string
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ job.status }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - run: |
+          python manage.py migrate
+          python manage.py test
+
+  build-scan-push:
+    needs: build-test
+    runs-on: ubuntu-latest
+    environment:
+      name: export docker
+      url: https://hub.docker.com/repository/docker/taha2samy/quack_quack
+    outputs:
+      result: ${{ job.status }}
+      image_tag: ${{ steps.docker_tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-buildx-action@v2
+      - id: docker_tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/dockerfile
+          push: true
+          tags: taha2samy/quack_quack:${{ steps.docker_tag.outputs.tag }}-scan
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy and append summary to Actions run summary
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+      
+          if ! command -v trivy >/dev/null 2>&1; then
+            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+            export PATH=$PWD/bin:$PATH
+          fi
+      
+          IMAGE="taha2samy/quack_quack:${{ steps.docker_tag.outputs.tag }}-scan"
+          OUT="trivy-report.json"
+      
+          trivy image --format json -o "$OUT" "$IMAGE" || true
+      
+          TOTAL_CRITICAL=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' "$OUT")
+          TOTAL_HIGH=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity=="HIGH")] | length' "$OUT")
+          TOTAL_MEDIUM=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length' "$OUT")
+          TOTAL_LOW=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity=="LOW")] | length' "$OUT")
+          TOTAL_ALL=$(jq '[.Results[].Vulnerabilities[]?] | length' "$OUT")
+      
+          echo "## 🔒 Trivy Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`$IMAGE\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total vulnerabilities found:** **$TOTAL_ALL**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Breakdown by Severity" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔴 **Critical:** $TOTAL_CRITICAL" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟠 **High:** $TOTAL_HIGH" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟡 **Medium:** $TOTAL_MEDIUM" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔵 **Low:** $TOTAL_LOW" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+      
+          if [ "$TOTAL_ALL" -eq 0 ]; then
+            echo "No vulnerabilities found ✅" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+      
+          echo "### Top Security Findings (CRITICAL / HIGH / MEDIUM)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          jq -r '
+            [.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL" or .Severity=="HIGH" or .Severity=="MEDIUM") ] 
+            | group_by(.VulnerabilityID) 
+            | map({
+                id: .[0].VulnerabilityID,
+                severity: .[0].Severity,
+                pkg: (.[0].PkgName // .[0].Target),
+                installed: (.[0].InstalledVersion // "-"),
+                fixed: (.[0].FixedVersion // "n/a"),
+                title: (.[0].Title // .[0].Description // ""),
+                link: ("https://avd.aquasec.com/nvd/" + .[0].VulnerabilityID)
+              })
+            | sort_by(.severity) 
+            | reverse
+            | .[:15]
+            | map("- **\(.id)** (\(.severity)) — `\(.pkg)` — installed: `\(.installed)` — fixed: `\(.fixed)`\n  \n  \(.title)\n  \n  [Details](\(.link))\n")
+            | .[]' "$OUT" \
+          | sed 's/^/ /' \
+          >> $GITHUB_STEP_SUMMARY
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  generate-summary:
+    needs: [build-test, build-scan-push]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - run: |
+          echo "## 🚀 CI/CD Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+  
+          echo "### 🧪 Testing Stage" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.build-test.outputs.result }}" == "success" ]]; then
+            echo "- **Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status:** ❌ Failure" >> $GITHUB_STEP_SUMMARY
+          fi
+  
+          echo "### 🐳 Build & Scan Stage" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.build-scan-push.outputs.result }}" == "success" ]]; then
+            echo "- **Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.build-scan-push.outputs.result }}" == "failure" ]]; then
+            echo "- **Status:** ❌ Failure" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status:** ⚠️ Skipped / Canceled" >> $GITHUB_STEP_SUMMARY
+          fi
