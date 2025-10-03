@@ -1,0 +1,27 @@
+%% Browser Subscription Flow Diagram
+graph TD
+    %% Define the steps/nodes in the process
+    A["<i class='fa fa-window-maximize'></i> 1. Browser Sends 'subscribe' Message<br>Payload includes 'element_id'"]
+    B["<i class='fa fa-user-cog'></i> 2. Browser Consumer Receives the Message"]
+    C["<i class='fa fa-database'></i> 3. Query Database for User's Permissions<br>for the requested 'element_id'"]
+    D{"<i class='fa fa-question-circle'></i> 4. Does the User Have Permission?"}
+    E["<i class='fa fa-check-circle'></i> 5. Subscription is Authorized<br>Consumer joins the element's channel group"]
+    F["<i class='fa fa-hdd'></i> 6. Fetch Historical Data<br>from Redis Cache"]
+    G["<i class='fa fa-paper-plane'></i> 7. Send Confirmation & Cached Data to Browser"]
+    H["<i class='fa fa-thumbs-up'></i> 8. Subscription Complete<br>Browser UI is populated with data"]
+    I["<i class='fa fa-times-circle'></i> Subscription Failed<br>Error message sent to Browser"]
+
+    %% Connect the steps with logic
+    A --> B
+    B --> C
+    C --> D
+    D -- Yes, Read or Read/Write --> E
+    D -- No Permission --> I
+    E --> F
+    F --> G
+    G --> H
+
+    %% Styling for clarity
+    style H fill:#D5F5E3,stroke:#2ECC71,stroke-width:2px
+    style I fill:#FDEDEC,stroke:#E74C3C,stroke-width:2px
+    style D fill:#FEF9E7,stroke:#F1C40F

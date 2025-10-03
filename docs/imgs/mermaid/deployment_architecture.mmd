@@ -1,0 +1,59 @@
+flowchart TD
+ subgraph subGraph0["External World"]
+        Client@{ label: "<i class=\"fa fa-globe\"></i> End User / Client" }
+  end
+ subgraph subGraph1["Gateway / Reverse Proxy"]
+        Nginx@{ label: "<i class=\"fa fa-network-wired\"></i> Nginx" }
+  end
+ subgraph subGraph2["Application Servers"]
+        Gunicorn@{ label: "<i class=\"fa fa-server\"></i> Gunicorn<br><em>Handles synchronous HTTP requests</em>" }
+        Daphne@{ label: "<i class=\"fa fa-wave-square\"></i> Daphne<br><em>Handles asynchronous WebSocket connections</em>" }
+  end
+ subgraph subGraph3["Django Application Instances"]
+    direction LR
+        Instance1@{ label: "<i class=\"fa fa-cogs\"></i> Django App Instance 1" }
+        Instance2@{ label: "<i class=\"fa fa-cogs\"></i> Django App Instance 2" }
+        Instance3["..."]
+  end
+ subgraph subGraph4["Data Stores"]
+        Postgres@{ label: "<i class=\"fa fa-database\"></i> PostgreSQL<br><em>Main Database</em>" }
+        Redis@{ label: "<i class=\"fa fa-hdd\"></i> Redis<br><em>Cache &amp; Channel Layer Broker</em>" }
+  end
+ subgraph subGraph5["Server Environment"]
+        subGraph1
+        subGraph2
+        subGraph3
+        subGraph4
+  end
+    Client -- Port 80 (HTTP) & 443 (HTTPS) --> Nginx
+    Nginx -- / (HTTP Traffic) --> Gunicorn
+    Nginx -- /ws/ (WebSocket Traffic) --> Daphne
+    Gunicorn --> Instance1 & Instance2 & Instance3
+    Daphne --> Instance1 & Instance2 & Instance3
+    Instance1 --> Postgres & Redis
+    Instance2 --> Postgres & Redis
+    Instance3 --> Postgres & Redis
+
+    Client@{ shape: rect}
+    Nginx@{ shape: rect}
+    Gunicorn@{ shape: rect}
+    Daphne@{ shape: rect}
+    Instance1@{ shape: rect}
+    Instance2@{ shape: rect}
+    Postgres@{ shape: rect}
+    Redis@{ shape: rect}
+    style Client fill:#D5F5E3,stroke:#2ECC71
+    style Nginx fill:#FAD7A0,stroke:#F39C12
+    style Gunicorn fill:#D6EAF8,stroke:#3498DB
+    style Daphne fill:#EBDEF0,stroke:#8E44AD
+    style Postgres fill:#E5E7E9,stroke:#808B96
+    style Redis fill:#FDEDEC,stroke:#E74C3C
+    linkStyle 3 stroke:#FF6D00,fill:none
+    linkStyle 4 stroke:#FF6D00,fill:none
+    linkStyle 5 stroke:#FF6D00,fill:none
+    linkStyle 7 stroke:#000000,fill:none
+    linkStyle 9 stroke:#FF6D00,fill:none
+    linkStyle 10 stroke:#FF6D00,fill:none
+    linkStyle 14 stroke:#FFD600
+
+

@@ -1,0 +1,44 @@
+%% Signals Flow Diagram - V2 (Detailed Technical Flow)
+graph TD
+    subgraph Admin Action
+        A["<i class='fa fa-user-shield'></i> 1. Admin updates a specific<br>Permission instance (ID=42)<br>in Django Admin"]
+    end
+
+    subgraph Django ORM & Signals
+        B["<i class='fa fa-save'></i> 2. `ElementPermissionsUser.objects.get(id=42).save()` is triggered"]
+        C["<i class='fa fa-bell'></i> 3. Django's Signal dispatcher sends a 'post_save' signal<br>passing the saved `instance` (ID=42)"]
+        D["<i class='fa fa-cogs'></i> 4. `on_permission_save(instance, ...)` handler is invoked"]
+    end
+
+    subgraph Signal Handler Logic
+        E["<i class='fa fa-code'></i> 5. Inside the handler:<br> - A group name is constructed using the instance ID<br>  `group_name = f'perm_{instance.id}'` => 'perm_42'"]
+        F["<i class='fa fa-paper-plane'></i> 6. A message payload is created<br>containing the updated permission data"]
+        G["<i class='fa fa-broadcast-tower'></i> 7. `channel_layer.group_send('perm_42', payload)` is called"]
+    end
+    
+    subgraph Real-time Layer (Redis)
+        H["<i class='fa fa-exchange-alt'></i> 8. The message is published on the 'perm_42' channel<br>in Redis Pub/Sub"]
+    end
+
+    subgraph Consumer Side
+        I["<i class='fa fa-user-cog'></i> 9. Browser Consumers subscribed to 'perm_42'<br>receive the message"]
+        J["<i class='fa fa-sync-alt'></i> 10. The consumer's `permissions_updates` method is executed"]
+        K["<i class='fa fa-desktop'></i> 11. Consumer sends a formatted update<br>to the specific browser client via WebSocket"]
+    end
+
+    subgraph End Result
+        L["<i class='fa fa-check-square'></i> 12. Browser UI reacts to the message,<br>updating the dashboard in real-time"]
+    end
+
+    %% Connect the stages
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J --> K
+    K --> L

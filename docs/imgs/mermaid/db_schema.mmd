@@ -1,0 +1,86 @@
+%% Database Schema (Entity Relationship Diagram)
+erDiagram
+    User {
+        int id PK
+        string username
+        string password
+        string email
+        string first_name
+        string last_name
+    }
+
+    "Group" {
+        int id PK
+        string name
+    }
+
+    User ||--o{ "User_Groups" : "belongs to"
+    "Group" ||--o{ "User_Groups" : "has"
+
+    Device {
+        UUID id PK
+        string name
+        string description
+        UUID public_key_id FK
+    }
+
+    JWTPublicKey {
+        UUID id PK
+        string name
+        string public_key
+        string algorithm
+        int key_size
+        bool is_active
+    }
+
+    Element {
+        UUID id PK
+        string name
+        string element_id UK
+        int points
+        string description
+        JSON details
+        UUID device_id FK
+    }
+
+    ElementDetailsStyle {
+        int id PK
+        string name
+        JSON details
+        UUID element_id FK
+    }
+    
+    Connections {
+        UUID id PK
+        JSON details
+        datetime created_at
+        UUID device_id FK
+    }
+
+    ElementPermissionsUser {
+        int id PK
+        string permissions
+        int user_id FK
+        UUID element_id FK
+    }
+
+    ElementPermissionsGroup {
+        int id PK
+        string permissions
+        int group_id FK
+        UUID element_id FK
+    }
+
+    %% --- Relationships ---
+    
+    Device }o--|| JWTPublicKey : "uses (optional)"
+    Device ||--o{ Element : "has"
+    Device ||--o{ Connections : "has"
+
+    Element ||--o{ ElementDetailsStyle : "has style details for"
+    
+    User ||--o{ ElementPermissionsUser : "has permission via"
+    Element ||--o{ ElementPermissionsUser : "is permitted for"
+
+    "Group" ||--o{ ElementPermissionsGroup : "has permission via"
+    Element ||--o{ ElementPermissionsGroup : "is permitted for"

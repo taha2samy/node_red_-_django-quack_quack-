@@ -31,7 +31,7 @@ class Device(models.Model):
     """Model representing a device with specific attributes."""
     id = models.UUIDField(primary_key=True, default=generate_uuid_device, editable=False)
     name = models.CharField(max_length=50)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     public_key = models.ForeignKey('JWTPublicKey', on_delete=models.SET_NULL, null=True, blank=True, help_text="The unique public key that identifies this device.")
 
 class Connections(models.Model):
@@ -49,8 +49,6 @@ class Element(models.Model):
     id = models.UUIDField(primary_key=True, default=generate_uuid_element, editable=False)
     name = models.CharField(max_length=50)
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
-
-    element_id = models.CharField(max_length=50, unique=True)
     points = models.IntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(1000)]
     )

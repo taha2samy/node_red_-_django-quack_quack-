@@ -33,8 +33,8 @@ class ConnectionsAdmin(admin.ModelAdmin):
 admin.site.register(Connections, ConnectionsAdmin)
 # Register Element model to the admin panel
 class ElementAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'element_id', 'points', 'description')
-    search_fields = ('name', 'element_id')
+    list_display = ('id', 'name', 'points', 'description')
+    search_fields = ('name', 'device__name')
     list_filter = ('points',)
 
 admin.site.register(Element, ElementAdmin)

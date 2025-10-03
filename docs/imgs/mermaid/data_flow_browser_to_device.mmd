@@ -1,0 +1,22 @@
+%% Data Flow: From Browser to Device (Simplified Flowchart)
+graph TD
+    %% Define the steps/nodes in the process
+    A["<i class='fa fa-window-maximize'></i> 1. User Interacts with UI<br>(e.g., clicks a switch)"]
+    B["<i class='fa fa-paper-plane'></i> 2. Browser Sends Command<br>via WebSocket"]
+    C["<i class='fa fa-user-cog'></i> 3. Browser Consumer Receives Command"]
+    D["<i class='fa fa-key'></i> 4. Permissions are Checked<br>against the Database"]
+    E["<i class='fa fa-broadcast-tower'></i> 5. Command is Published to Channel Layer"]
+    F["<i class='fa fa-robot'></i> 6. Device Consumer Receives Command<br>from Channel Layer"]
+    G["<i class='fa fa-microchip'></i> 7. Command is Sent to Device<br>via WebSocket"]
+
+    %% Connect the steps sequentially
+    A --> B
+    B --> C
+    C --> D
+    D -- If Permitted --> E
+    E --> F
+    F --> G
+
+    %% Optional Styling
+    style A fill:#D5F5E3,stroke:#2ECC71
+    style G fill:#D6EAF8,stroke:#3498DB

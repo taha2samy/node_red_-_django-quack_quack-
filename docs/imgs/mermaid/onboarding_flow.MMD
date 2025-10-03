@@ -1,0 +1,30 @@
+%% Device & User Onboarding Workflow
+graph TD
+    subgraph "Phase 1: User & Security Setup"
+        A["<i class='fa fa-user-plus'></i> 1. Create a new User in Django Admin<br><em>(if they don't already exist)</em>"]
+        B["<i class='fa fa-key'></i> 2. Create a new JWTPublicKey<br><em>Paste the device's public PEM key</em>"]
+    end
+
+    subgraph "Phase 2: Device & Element Configuration"
+        C["<i class='fa fa-microchip'></i> 3. Create a new Device"]
+        D["<i class='fa fa-link'></i> 4. Assign the JWTPublicKey (from step 2)<br>to the new Device"]
+        E["<i class='fa fa-sitemap'></i> 5. Create one or more Elements<br>and link them to the new Device"]
+    end
+    
+    subgraph "Phase 3: Granting Permissions"
+        F["<i class='fa fa-user-lock'></i> 6. Create an ElementPermissionsUser record"]
+        G["<i class='fa fa-check-double'></i> 7. In the record, select:<br>- The User (from step 1)<br>- The Element (from step 5)<br>- The Permission Level (e.g., 'Read/Write')"]
+    end
+
+    subgraph "Phase 4: Completion"
+        H["<i class='fa fa-thumbs-up'></i> Onboarding Complete!<br>The User can now access the Element,<br>and the Device can authenticate."]
+    end
+
+    %% --- Connect the steps ---
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H

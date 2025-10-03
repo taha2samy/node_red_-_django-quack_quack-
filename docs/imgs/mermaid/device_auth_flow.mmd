@@ -1,0 +1,29 @@
+%% Device Authentication Flow Diagram
+graph TD
+    %% Define the steps/nodes in the process
+    A["<i class='fa fa-microchip'></i> 1. Device Initiates WebSocket Connection<br>Sends JWT in 'Authorization' Header"]
+    B["<i class='fa fa-door-open'></i> 2. Middleware Intercepts Connection Request"]
+    C["<i class='fa fa-search'></i> 3. Decode JWT (without signature verification)<br>to extract 'device_id' from payload"]
+    D["<i class='fa fa-database'></i> 4. Query Database for Public Key<br>using the 'device_id'"]
+    E{"<i class='fa fa-question-circle'></i> 5. Does the Public Key Exist?"}
+    F["<i class='fa fa-check-circle'></i> 6. Verify JWT Signature<br>using the fetched Public Key"]
+    G{"<i class='fa fa-question-circle'></i> 7. Is the Signature Valid?"}
+    H["<i class='fa fa-thumbs-up'></i> 8. Authentication Successful<br>Connection is Accepted & Handed to Consumer"]
+    I["<i class='fa fa-times-circle'></i> Authentication Failed<br>Connection is Rejected"]
+
+    %% Connect the steps with logic
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E -- Yes --> F
+    E -- No --> I
+    F --> G
+    G -- Yes --> H
+    G -- No --> I
+
+    %% Styling for clarity
+    style H fill:#D5F5E3,stroke:#2ECC71,stroke-width:2px
+    style I fill:#FDEDEC,stroke:#E74C3C,stroke-width:2px
+    style E fill:#FEF9E7,stroke:#F1C40F
+    style G fill:#FEF9E7,stroke:#F1C40F

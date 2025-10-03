@@ -1,0 +1,61 @@
+%% Frontend Component Interaction (Class Diagram)
+classDiagram
+    direction BT
+
+    class WebSocketController {
+        <<Singleton>>
+        +WebSocket connection
+        +sendMessage(message)
+        +handleIncomingMessage(data)
+        +registerComponent(elementId, componentInstance)
+    }
+
+    class BaseElementComponent {
+        <<Abstract>>
+        # domId
+        # elementId
+        # details
+        # _permissions
+        +setStatus(status)
+        +setSubscriptionStatus(isSubscribed)
+        +setPermissions(permValue)
+        +setLastEditAt(date)
+        +setLastEditBy(user)
+        +setValue(value)*
+        +action()*
+    }
+
+    class SwitchButton {
+        - inputElement
+        - labelElement
+        +setValue(value)
+        +action()
+    }
+
+    class SliderButton {
+        - inputElement
+        - labelElement
+        +setValue(value)
+        +action()
+    }
+    
+    class SensorGauge {
+        - gaugeInstance
+        - valueEl
+        +setValue(value)
+    }
+
+    class SensorChart {
+        - chartInstance
+        - valueEl
+        +setValue(message)
+        +loadHistory(messages)
+    }
+
+    %% --- Relationships ---
+    BaseElementComponent <|-- SwitchButton : extends
+    BaseElementComponent <|-- SliderButton : extends
+    BaseElementComponent <|-- SensorGauge : extends
+    BaseElementComponent <|-- SensorChart : extends
+
+    WebSocketController o-- "1..*" BaseElementComponent : Manages / Dispatches to

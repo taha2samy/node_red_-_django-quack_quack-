@@ -1,95 +1,106 @@
-![logo](imgs/logo.svg)
-![alt text](<imgs/2a7271140369153bbededfb73fefad4cdd8ed029 (2).gif>)
-![alt text](imgs/a26a2d4f8223529c5c2b0115ba258d784abf6c21.gif)
-### **Node-RED Integration with Django**
+<p align="center">
+  <img src="docs/imgs/logo.svg" alt="Project Logo" width="150"/>
+</p>
+
+<h1 align="center">Project Sentinel (اسم مقترح)</h1>
+
+<p align="center">
+  A real-time IoT dashboard and control system built with Django Channels.
+  <br />
+  <a href="docs/README.md"><strong>Explore the docs »</strong></a>
+  <br />
+  <br />
+  <a href="#key-features">Key Features</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#architecture-overview">Architecture</a>
+</p>
+
+<p align="center">
+  <!-- Badges: Replace with your actual links -->
+  <img src="https://img.shields.io/badge/Python-3.12-blue.svg" alt="Python Version">
+  <img src="https://img.shields.io/badge/Django-5.2-green.svg" alt="Django Version">
+  <img src="https://img.shields.io/badge/Channels-4.3-red.svg" alt="Channels Version">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+  <img src="https://img.shields.io/github/stars/YOUR_USERNAME/YOUR_REPO?style=social" alt="GitHub Stars">
+</p>
 
 ---
 
-#### **Overview**
-This project integrates **Node-RED** with **Django**, creating a powerful and scalable system for managing IoT devices and processes. The system is designed to handle real-time data, ensure secure communication, and simplify scaling and customization.
+## About The Project
+
+Project Sentinel is a powerful, scalable, and secure platform for monitoring and controlling IoT devices in real-time. It provides a web-based dashboard where users can visualize data from sensors (gauges, charts) and send commands to actuators (switches, sliders), all governed by a flexible role-based access control system.
+
+The backend is built on the robust Django framework, supercharged with Django Channels for handling thousands of persistent WebSocket connections. This makes it ideal for applications requiring low-latency, bidirectional communication between devices, servers, and user interfaces.
+
+### Key Features
+
+*   ⚡️ **Real-Time Communication:** Bidirectional data flow using WebSockets for instant UI updates.
+*   🛡️ **Secure Device Authentication:** JWT-based authentication ensures that only authorized devices can connect.
+*   🔐 **Granular Permissions:** Role-based access control (RBAC) for users and groups at the individual element level.
+*   🏗️ **Scalable Architecture:** A decoupled, event-driven architecture powered by Redis as a message broker.
+*   📊 **Dynamic Frontend:** A component-based frontend built with Vanilla JS, allowing for easy extension.
+*   🐳 **Dockerized:** Comes with a Docker setup for easy development and deployment.
 
 ---
 
-### **Features**
+## Architecture Overview
 
-#### **1. Attribute-Based Access Control**
-- Fine-grained permissions allow you to determine who can view or interact with specific devices or actions.
-- Implemented using **Django’s Attribute-Based Access Control**:
-  - Create user groups with predefined permissions.
-  - Assign custom permissions to individual users as needed.
-- Example: A user can view the status of a button or device without having the ability to modify it.
+The system is designed with a clear separation of concerns, utilizing an Event-Driven Architecture. Devices and Browsers act as clients, communicating with a central Django backend through dedicated WebSocket consumers. Django Signals ensure that any state change in the database is instantly reflected across all connected clients.
 
----
-
-#### **2. Scalability**
-- Combines **Django** and **Node-RED** to ensure smooth scaling:
-  - Supports splitting devices into manageable groups, each with its own **Node-RED** instance.
-  - All groups connect seamlessly to Django for centralized control.
-- Stateless Django:
-  - Easily add multiple Django servers to handle a growing number of devices and users.
-  - Prevents overload on any single Node-RED instance by distributing the load efficiently.
-- **Database caching** helps manage large-scale deployments efficiently.
+<p align="center">
+  <a href="docs/02_architecture.md">
+    <img src="docs/imgs/system_overview.png" alt="System Architecture Diagram" width="800">
+  </a>
+  <br>
+  <em>Click to explore the detailed architecture documentation.</em>
+</p>
 
 ---
 
-#### **3. Non-Repudiation**
-- Ensures traceability for every action performed:
-  - Logs every command sent to **Node-RED**, including details of who initiated it.
-  - Uses a database like **InfluxDB** to record actions.
-- Planned improvements:
-  - Introduce an abstraction layer for database selection and authentication methods.
-  - Provide seamless logging and tracking options.
+## Quick Start
+
+Get the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+*   Docker & Docker Compose
+
+### Installation (Docker)
+
+1.  **Clone the repository:**
+    ```sh
+    git clone https://github.com/taha2samy/node_red_-_django-quack_quack-.git .
+    ```
+
+2.  **Configure Environment Variables:**
+    *   Navigate to the `docker/` directory.
+    *   Rename `enfile.env` to `.env`.
+    *   Fill in the required values in the `.env` file (e.g., `SECRET_KEY`).
+
+3.  **Build and Run with Docker Compose:**
+    ```sh
+    cd docker
+    docker-compose up --build
+    ```
+
+4.  **Access the Application:**
+    *   The application should now be running at `http://localhost:8000`.
+    *   The Django admin panel is available at `http://localhost:8000/admin/`.
 
 ---
 
-#### **4. Security & Authentication**
-- Ensures secure communication between Django and Node-RED using:
-  - **Digital Signatures**: Every connection includes a unique, dynamic signature in the WebSocket header, ensuring authenticity.
-  - **TLS Encryption**: Guarantees secure data transmission.
-- Planned updates:
-  - Assign unique keys to each Node-RED instance for signature generation, enhancing security.
+## Documentation
+
+For a deep dive into the system's architecture, API reference, core concepts, and setup guides, please refer to our **[Full Documentation](docs/README.md)**.
+
+Here are some key sections:
+*   [**System Architecture**](docs/02_architecture.md)
+*   [**API Reference**](docs/04_api_reference/README.md)
+*   [**Device Authentication Flow**](docs/05_core_concepts/authentication.md)
+*   [**Database Schema**](docs/06_database/schema.md)
 
 ---
 
-#### **5. Frontend Customization**
-- Simplified template system for device representation:
-  - Define templates for visualizing data (e.g., graphs, dashboards).
-  - Store input configurations (e.g., address, color, layout) in JSON format within the database.
-- Upcoming enhancements:
-  - Support for multiple templates per device or sensor with user-defined settings.
+## License
 
----
-
-#### **6. Flexibility**
-- **Django Integration**: Provides a flexible and developer-friendly environment with ample support and resources compared to solutions like Assistant Home.
-- **Cloud and On-Premise Compatibility**:
-  - Run parts of the system on the cloud and others on private servers simultaneously without issues.
-
----
-
-#### **7. Automation via Node-RED**
-- While the system doesn’t include built-in automation:
-  - Relies on **Node-RED** for automation processes.
-  - Devices or sensors can connect to multiple Node-RED instances for shared data and automation logic.
-
----
-
-#### **8. Future Developments**
-- Support for **Streaming UDP**:
-  - Enables video streaming (e.g., for cameras) using **WebRTC**.
-- Enhanced inter-Node-RED permissions to manage shared devices or sensors across instances.
-
----
-
-### **Advantages**
-- **Ease of Development**: Django simplifies development and offers extensive community support.
-- **Scalability**: Designed for handling large-scale deployments effortlessly.
-- **Customization**: Highly adaptable for specific organizational needs.
-
----
-
-### **Disadvantages**
-- No built-in automation:
-  - Requires a **Master-Slave** architecture for automation within Django.
-  - Automation depends on Node-RED for flexibility and efficiency.
-
+Distributed under the MIT License. See `LICENSE` file for more information.

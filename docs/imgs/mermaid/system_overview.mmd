@@ -1,0 +1,83 @@
+graph TD
+    %% --- Define Nodes ---
+    %% Clients
+    Device["<i class='fa fa-microchip'></i> Device<br>(Node-RED)"]
+    Browser["<i class='fa fa-window-maximize'></i> Browser<br>(Dashboard UI)"]
+
+    %% Backend Components
+    NodeRedConsumer["<i class='fa fa-robot'></i> Device Consumer"]
+    BrowserConsumer["<i class='fa fa-user-cog'></i> Browser Consumer"]
+    Middleware["<i class='fa fa-shield-alt'></i> Auth Middleware"]
+    ChannelLayer["<i class='fa fa-exchange-alt'></i> Channel Layer<br>(Redis Pub/Sub)"]
+    Cache["<i class='fa fa-hdd'></i> Redis Cache"]
+    DB["<i class='fa fa-database'></i> Database<br>(PostgreSQL)"]
+    Admin["<i class='fa fa-user-shield'></i> Django Admin"]
+    Signals["<i class='fa fa-broadcast-tower'></i> Django Signals"]
+
+    %% --- Group Components Logically ---
+    subgraph Frontend
+        Browser
+    end
+
+    subgraph Hardware
+        Device
+    end
+    
+    subgraph Backend
+        subgraph Real-time Layer
+            Middleware --> NodeRedConsumer
+            BrowserConsumer
+            ChannelLayer
+            Cache
+        end
+        subgraph Persistence & Logic
+            DB
+            Admin
+            Signals
+        end
+    end
+
+    %% --- Define Flows ---
+
+    %% Flow 1: Device sends data to Browser
+    Device -- "1 Send Data Packet (WebSocket)" --> Middleware
+    Middleware -- "2 Authenticate Device JWT" --> NodeRedConsumer
+    NodeRedConsumer -- "3a. Write to Cache" --> Cache
+    NodeRedConsumer -- "3b. Publish Data to Group" --> ChannelLayer
+    ChannelLayer -- "4 Forward to Subscribers" --> BrowserConsumer
+    BrowserConsumer -- "5 Push Update to UI" --> Browser
+
+    %% Flow 2: Browser sends command to Device
+    Browser -- "A Send Command (WebSocket)" --> BrowserConsumer
+    BrowserConsumer -- "B Check User Permissions" --> DB
+    BrowserConsumer -- "C Publish Command to Group" --> ChannelLayer
+    ChannelLayer -- "D Forward to Device's Consumer" --> NodeRedConsumer
+    NodeRedConsumer -- "E Send Command to Device" --> Device
+    
+    %% Flow 3: System updates (e.g., Admin changes permissions)
+    Admin -- "X Modify Data in Admin Panel" --> DB
+    DB -- "Y Trigger Signal on Model Save" --> Signals
+    Signals -- "Z Publish 'permissions_updates'" --> ChannelLayer
+    ChannelLayer -- "Z.1 Forward Update to Subscribers" --> BrowserConsumer
+    
+    %% --- Styling ---
+    style Device fill:#D6EAF8,stroke:#3498DB,stroke-width:2px
+    style Browser fill:#D5F5E3,stroke:#2ECC71,stroke-width:2px
+    
+    linkStyle 0 stroke:#3498DB,stroke-width:2px,fill:none;
+    linkStyle 1 stroke:#3498DB,stroke-width:2px,fill:none;
+    linkStyle 2 stroke:#3498DB,stroke-width:2px,fill:none;
+    linkStyle 3 stroke:#3498DB,stroke-width:2px,fill:none;
+    linkStyle 4 stroke:#3498DB,stroke-width:2px,fill:none;
+    linkStyle 5 stroke:#3498DB,stroke-width:2px,fill:none;
+
+    linkStyle 6 stroke:#2ECC71,stroke-width:2px,fill:none,stroke-dasharray: 5 5;
+    linkStyle 7 stroke:#2ECC71,stroke-width:2px,fill:none,stroke-dasharray: 5 5;
+    linkStyle 8 stroke:#2ECC71,stroke-width:2px,fill:none,stroke-dasharray: 5 5;
+    linkStyle 9 stroke:#2ECC71,stroke-width:2px,fill:none,stroke-dasharray: 5 5;
+    linkStyle 10 stroke:#2ECC71,stroke-width:2px,fill:none,stroke-dasharray: 5 5;
+
+    linkStyle 11 stroke:#8E44AD,stroke-width:2px,fill:none,stroke-dasharray: 2 2;
+    linkStyle 12 stroke:#8E44AD,stroke-width:2px,fill:none,stroke-dasharray: 2 2;
+    linkStyle 13 stroke:#8E44AD,stroke-width:2px,fill:none,stroke-dasharray: 2 2;
+    linkStyle 14 stroke:#8E44AD,stroke-width:2px,fill:none,stroke-dasharray: 2 2;
