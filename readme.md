@@ -75,7 +75,9 @@ Get the project up and running on your local machine for development and testing
     git clone https://github.com/taha2samy/node_red_-_django-quack_quack-.git
     cd node_red_-_django-quack_quack-
     ```
-    use buildin tasks to run dockercompose
+
+
+ use builtin tasks in vscode to run dockercompose
 
 
 ---
