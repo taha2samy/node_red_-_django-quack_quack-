@@ -23,6 +23,6 @@ def tester_view(request):
 
     return render(
         request,
-        r'cards/templates/test_guage.html',
+        r'test_dashboard.html',
         {'elements': [guage1, guage2, chart1, chart2, switch1, switch2, slider1, slider2]}
     )
