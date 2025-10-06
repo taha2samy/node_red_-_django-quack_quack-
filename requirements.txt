@@ -1,4 +1,4 @@
-asgiref==3.9.2
+asgiref==3.10.0
 attrs==25.3.0
 autobahn==24.4.2
 cffi>=1.17.0
