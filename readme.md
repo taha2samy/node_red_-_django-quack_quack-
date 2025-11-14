@@ -55,7 +55,6 @@ The system is designed with a clear separation of concerns, utilizing an Event-D
     <img src="docs/imgs/system_overview.png" alt="System Architecture Diagram" width="800">
   </a>
   <br>
-  <em>Click to explore the detailed architecture documentation.</em>
 </p>
 
 ---
