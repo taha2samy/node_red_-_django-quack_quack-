@@ -31,9 +31,9 @@ service-identity==24.2.0
 setuptools==80.9.0
 sqlparse==0.5.4
 Twisted==25.5.0
-txaio==25.12.1
+txaio==25.12.2
 typing_extensions==4.15.0
-tzdata==2025.2
+tzdata==2025.3
 websockets==15.0.1
 whitenoise==6.11.0
 zope.interface==8.1.1
